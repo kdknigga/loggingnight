@@ -2,7 +2,8 @@
 Trouble remembering what the FAA says about night time logging and currency?  I gotchu, bro.
 
 ## Usage
-```$ ./loggingnight.py --help
+```
+$ ./loggingnight.py --help
 usage: loggingnight.py [-h] -a AIRPORT [-d DATE] [-D]
 
 optional arguments:
@@ -14,7 +15,8 @@ optional arguments:
   ```
 
 ## Examples
-```$ ./loggingnight.py -a KDPA
+```
+$ ./loggingnight.py -a KDPA
 Night times for Dupage Airport on 2017-05-08
 
 07:59 PM -- Sun set
@@ -31,7 +33,8 @@ logging of night takeoffs and landings can start
 (14 CFR 61.57(b))
 ```
 
-```$ ./loggingnight.py -a KDPA -d 05/08/2017
+```
+$ ./loggingnight.py -a KDPA -d 05/08/2017
 Night times for Dupage Airport on 2017-05-08
 
 07:59 PM -- Sun set
