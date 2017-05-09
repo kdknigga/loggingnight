@@ -10,7 +10,8 @@ optional arguments:
   -a AIRPORT, --airport AIRPORT
                         ICAO code for the airport
   -d DATE, --date DATE  Date of the flight
-  -D, --debug```
+  -D, --debug
+  ```
 
 ## Examples
 ```$ ./loggingnight.py -a KDPA
@@ -27,7 +28,8 @@ Logging of night time can start and aircraft must be night equipped
 08:59 PM -- One hour after sun set
 Must be night current to carry passengers and
 logging of night takeoffs and landings can start
-(14 CFR 61.57(b))```
+(14 CFR 61.57(b))
+```
 
 ```$ ./loggingnight.py -a KDPA -d 05/08/2017
 Night times for Dupage Airport on 2017-05-08
@@ -43,4 +45,5 @@ Logging of night time can start and aircraft must be night equipped
 08:59 PM -- One hour after sun set
 Must be night current to carry passengers and
 logging of night takeoffs and landings can start
-(14 CFR 61.57(b))```
+(14 CFR 61.57(b))
+```
