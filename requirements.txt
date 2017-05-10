@@ -1,0 +1,10 @@
+Flask==0.12.1
+Jinja2==2.9.6
+MarkupSafe==1.0
+Werkzeug==0.12.1
+click==6.7
+itsdangerous==0.24
+python-dateutil==2.6.0
+requests==2.14.1
+six==1.10.0
+wsgiref==0.1.2
