@@ -56,8 +56,7 @@ def lookup():
     try:
         icao_identifier = request.form['airport']
         date = request.form['date']
-        icao_identifier = 'KSMO'
-        date = '5/9/2017'
+        #todo validate params
         real_date = makedate(date)
         airport = web_query(AIRPORTINFO_URL, params={'icao': icao_identifier})
 
