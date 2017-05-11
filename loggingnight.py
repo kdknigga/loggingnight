@@ -16,6 +16,14 @@ def debug_print(string, level=1):
     if args.debug >= level:
         print(string, file=sys.stderr)
 
+def total_seconds(td):
+    if hasattr(td, 'total_seconds'):
+        return td.total_seconds()
+    else:
+        # timedelta has no total_seconds method in Python 2.6
+        sec = td.seconds + td.days * 24 * 60 * 60
+        return (td.microseconds / 10**6) + sec
+
 def makedate(datestring):
     return dateparser.parse(datestring).date()
 
@@ -28,7 +36,7 @@ def web_query(url, params=None, headers=None):
     try:
         r = requests.get(url, headers=headers, params=params, timeout=10)
         debug_print('Final URL of response: %s' % r.url, level=2)
-        debug_print('Query time: %f seconds' % r.elapsed.total_seconds(), level=2)
+        debug_print('Query time: %f seconds' % total_seconds(r.elapsed), level=2)
         r.raise_for_status()
 
     except requests.exceptions.Timeout:
