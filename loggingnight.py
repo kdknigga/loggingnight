@@ -22,7 +22,7 @@ def total_seconds(td):
     else:
         # timedelta has no total_seconds method in Python 2.6
         sec = td.seconds + td.days * 24 * 60 * 60
-        return (td.microseconds / 10**6) + sec
+        return (float(td.microseconds) / 10**6) + sec
 
 def makedate(datestring):
     return dateparser.parse(datestring).date()
