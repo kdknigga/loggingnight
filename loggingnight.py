@@ -4,6 +4,7 @@ from __future__ import print_function
 import argparse
 import datetime
 import json
+import re
 import sys
 import requests
 from dateutil import parser as dateparser
@@ -26,6 +27,17 @@ def total_seconds(td):
 
 def makedate(datestring):
     return dateparser.parse(datestring).date()
+
+def fix_location(location):
+    # The split on / is required for airport like KDPA where
+    # the location is "Chicago / west Chicago, IL"
+    location = location.split('/')[-1]
+
+    # KSTL and KSUS have location "St Louis, MO" but USNO wants
+    # Saint abbreviated with the dot, i.e., "St."
+    st_no_dot = re.compile(r'^St(?!\.)\b')
+    location = st_no_dot.sub('St.', location)
+    return location
 
 def web_query(url, params=None, headers=None):
     params = params or {}
@@ -65,9 +77,7 @@ if not 'location' in airport or not airport['location']:
     print("If the airport doesn't have an ICAO code, use a nearby airport with one")
     sys.exit(3)
 
-# The split on / is required for airport like KDPA where
-# the location is "Chicago / west Chicago, IL"
-location = airport['location'].split('/')[-1]
+location = fix_location(airport['location'])
 
 usno = web_query(USNO_URL, params={'loc': location, 'date': args.date.strftime('%m/%d/%Y')})
 debug_print(json.dumps(usno, sort_keys=True, indent=4, separators=(',', ': ')), level=2)
