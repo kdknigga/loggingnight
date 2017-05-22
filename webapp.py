@@ -1,0 +1,46 @@
+#!/usr/bin/env python
+
+import datetime
+import json
+from dateutil import parser as dateparser
+from flask import Flask, render_template, request
+from loggingnight import LoggingNight
+
+app = Flask('__name__')
+app.config['DEBUG'] = True
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/lookup', methods=['GET', 'POST'])
+def lookup():
+    if request.method == 'POST':
+        icao_identifier = request.form['airport']
+        date = dateparser.parse(request.form['date']).date()
+    elif request.method == 'GET':
+        icao_identifier = request.args.get('airport')
+        date = dateparser.parse(request.args.get('date', datetime.date.today().isoformat())).date()
+    else:
+        abort(400)
+
+    try:
+        ln = LoggingNight(icao_identifier, date)
+    except:
+        abort(500)
+
+    result = dict(
+        airport=icao_identifier,
+        name=ln.name,
+        date=date.isoformat(),
+        sunset=ln.sun_set.strftime('%I:%M %p'),
+        end_civil=ln.end_civil_twilight.strftime('%I:%M %p'),
+        one_hour=ln.hour_after_sunset.strftime('%I:%M %p')
+        )
+
+    return json.dumps(result)
+        
+if __name__ == '__main__':
+    app.run()
+        
+# vi: modeline tabstop=8 expandtab shiftwidth=4 softtabstop=4 syntax=python

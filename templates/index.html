@@ -20,7 +20,7 @@
     #output {
       font-size: 20pt;
     }
-    #out_icao {
+    #out_name {
       font-size: 30pt;
       font-weight: bold;
     }
@@ -58,7 +58,7 @@
           
           alert('Sorry, an error occurred');
         } else {
-          $('#out_icao').text(data.airport);
+          $('#out_name').text(data.name);
           $('#out_date').text(data.date);
           $('#out_sunset').text(data.sunset);
           $('#out_end_civil').text(data.end_civil);
@@ -90,7 +90,7 @@
 
 <div style="display: none;" id="output">
 <hr>
-<div id="out_icao"></div>
+<div id="out_name"></div>
 <div id="out_date" class="helper"></div>
 <div class="title">Sunset</div>
 <div id="out_sunset" class="time"></div>
@@ -107,3 +107,4 @@
 
 </body>
 </html>
+

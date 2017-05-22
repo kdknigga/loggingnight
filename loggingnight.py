@@ -1,89 +1,67 @@
 #!/usr/bin/env python
 
 from __future__ import print_function
-import argparse
 import datetime
-import json
-import sys
-from dateutil import parser as dateparser
 import requests
-from flask import Flask, render_template, request
-
-app = Flask('loggingflight')
-
-
-AIRPORTINFO_URL = 'http://www.airport-data.com/api/ap_info.json'
-USNO_URL = 'http://api.usno.navy.mil/rstt/oneday'
-ONE_HOUR = datetime.timedelta(hours=1)
-
-def debug_print(string, level=1):
-    #if args.debug >= level:
-    #    print(string, file=sys.stderr)
-    pass
+from dateutil import parser as dateparser
 
 def makedate(datestring):
     return dateparser.parse(datestring).date()
 
-def web_query(url, params=None, headers=None):
-    params = params or {}
-    headers = headers or {}
+class LoggingNight(object):
+    AIRPORTINFO_URL = 'http://www.airport-data.com/api/ap_info.json'
+    USNO_URL = 'http://api.usno.navy.mil/rstt/oneday'
+    ONE_HOUR = datetime.timedelta(hours=1)
 
-    debug_print('Sending query to remote API %s' % url)
-    debug_print('Query parameters: %s' % str(params), level=2)
-    try:
+    def web_query(self, url, params=None, headers=None):
+        params = params or {}
+        headers = headers or {}
+        stats = {}
+
         r = requests.get(url, headers=headers, params=params, timeout=10)
-        debug_print('Final URL of response: %s' % r.url, level=2)
-        debug_print('Query time: %f seconds' % r.elapsed.total_seconds(), level=2)
+        stats['final_url'] = r.url
+        stats['query_time'] = r.elapsed.total_seconds()
+        stats['status_code'] = r.status_code
+        stats['status_text'] = r.reason
         r.raise_for_status()
 
-    except requests.exceptions.Timeout:
-        print('Connecting to %s timed out' % url)
-        return None
+        return {'query_stats': stats, 'response': r.json()}
 
-    except requests.exceptions.HTTPError:
-        print('%s returned %d (%s) trying to do an API lookup' % (url, r.status_code, r.reason))
-        return None
+    class LocationException(IOError):
+        """An error occured finding airport location information"""
 
-    return r.json()
+    class AstronomicalException(IOError):
+        """An error occured finding astronomical information"""
 
-@app.route('/')
-def index():
-    return render_template('index.html')
+    def __init__(self, icao, date):
+        self.icao = icao
+        self.date = date
 
+        self.airport = self.web_query(self.AIRPORTINFO_URL, params={'icao': self.icao})
+        if not 'response' in self.airport or not 'location' in self.airport['response'] \
+        or not self.airport['response']['location']:
+            raise self.LocationException('Unable to find location information for %s' % self.icao)
 
-@app.route('/lookup', methods=['POST'])
-def lookup():
-    try:
-        icao_identifier = request.form['airport']
-        date = request.form['date']
-        #todo validate params
-        real_date = makedate(date)
-        airport = web_query(AIRPORTINFO_URL, params={'icao': icao_identifier})
+        # The split on / is required for airport like KDPA where
+        # the location is "Chicago / west Chicago, IL"
+        self.location = self.airport['response']['location'].split('/')[-1]
 
-        location = airport['location'].split('/')[-1]
+        self.usno = self.web_query(self.USNO_URL, params={'loc': self.location, 'date': self.date.strftime('%m/%d/%Y')})
+        if not 'response' in self.usno or not 'sundata' in self.usno['response']:
+            raise self.AstronomicalException('Unable to find sun data')
 
-        usno = web_query(USNO_URL, params={'loc': location, 'date': real_date.strftime('%m/%d/%Y')})
-        #debug_print(json.dumps(usno, sort_keys=True, indent=4, separators=(',', ': ')), level=2)
+        self.phenTimes = dict((i['phen'], i['time']) for i in self.usno['response']['sundata'])
 
-        phenTimes = dict((i['phen'], i['time']) for i in usno['sundata'])
+        self.name = self.airport['response']['name']
+        self.sun_set = dateparser.parse(self.phenTimes['S'])
+        self.end_civil_twilight = dateparser.parse(self.phenTimes['EC'])
+        self.hour_after_sunset = self.sun_set + self.ONE_HOUR
 
-        sun_set = dateparser.parse(phenTimes['S'])
-        end_civil_twilight = dateparser.parse(phenTimes['EC'])
+if __name__ == "__main__":
+    import argparse
+    import datetime
+    import sys
 
-        result = dict(
-            airport=icao_identifier,
-            date=date,
-            sunset=sun_set.strftime('%I:%M %p'), 
-            end_civil=end_civil_twilight.strftime('%I:%M %p'),
-            one_hour=(sun_set + ONE_HOUR).strftime('%I:%M %p')
-            )
-
-        return json.dumps(result)
-    except:
-        return '{ error: true }'
-
-
-def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-a", "--airport", help="ICAO code for the airport", required=True)
     parser.add_argument("-d", "--date", type=makedate,
@@ -91,42 +69,20 @@ def main():
     parser.add_argument("-D", "--debug", action='count')
     args = parser.parse_args()
 
-    airport = web_query(AIRPORTINFO_URL, params={'icao': args.airport})
-    debug_print(json.dumps(airport, sort_keys=True, indent=4, separators=(',', ': ')), level=2)
+    ln = LoggingNight(args.airport, args.date)
 
-    if not 'location' in airport or not airport['location']:
-        print('Unable to find airport %s' % args.airport)
-        print('Check that you are using the ICAO code for that airport (KDPA, not DPA)')
-        print("If the airport doesn't have an ICAO code, use a nearby airport with one")
-        sys.exit(3)
-
-    # The split on / is required for airport like KDPA where
-    # the location is "Chicago / west Chicago, IL"
-    location = airport['location'].split('/')[-1]
-
-    usno = web_query(USNO_URL, params={'loc': location, 'date': args.date.strftime('%m/%d/%Y')})
-    debug_print(json.dumps(usno, sort_keys=True, indent=4, separators=(',', ': ')), level=2)
-
-    phenTimes = dict((i['phen'], i['time']) for i in usno['sundata'])
-
-    sun_set = dateparser.parse(phenTimes['S'])
-    end_civil_twilight = dateparser.parse(phenTimes['EC'])
-
-    print("Night times for %s on %s" % (airport['name'], args.date.isoformat()))
+    print("Night times for %s on %s" % (ln.name, ln.date.isoformat()))
     print("")
-    print("%s -- Sun set\nPosition lights required" % sun_set.strftime('%I:%M %p'))
+    print("%s -- Sun set\nPosition lights required" % ln.sun_set.strftime('%I:%M %p'))
     print("(14 CFR 91.209)")
     print("")
-    print("%s -- End of civil twilight" % end_civil_twilight.strftime('%I:%M %p'))
+    print("%s -- End of civil twilight" % ln.end_civil_twilight.strftime('%I:%M %p'))
     print("Logging of night time can start and aircraft must be night equipped")
     print("(14 CFR 61.51(b)(3)(i), 14 CFR 91.205(c), and 14 CFR 1.1)")
     print("")
-    print("%s -- One hour after sun set" % (sun_set + ONE_HOUR).strftime('%I:%M %p'))
+    print("%s -- One hour after sun set" % ln.hour_after_sunset.strftime('%I:%M %p'))
     print("Must be night current to carry passengers and")
     print("logging of night takeoffs and landings can start")
     print("(14 CFR 61.57(b))")
 
-
-if __name__ == '__main__':
-    main()
-
+# vi: modeline tabstop=8 expandtab shiftwidth=4 softtabstop=4 syntax=python
