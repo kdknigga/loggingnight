@@ -10,11 +10,14 @@ def makedate(datestring):
     return dateparser.parse(datestring).date()
 
 class LoggingNight(object):
+    """Provide an ICAO code and a date and get what the FAA considers night"""
+
     AIRPORTINFO_URL = 'http://www.airport-data.com/api/ap_info.json'
     USNO_URL = 'http://api.usno.navy.mil/rstt/oneday'
     ONE_HOUR = datetime.timedelta(hours=1)
 
-    def total_seconds(self, td):
+    @staticmethod
+    def total_seconds(td):
         if hasattr(td, 'total_seconds'):
             return td.total_seconds()
         else:
@@ -22,7 +25,8 @@ class LoggingNight(object):
             sec = td.seconds + td.days * 24 * 60 * 60
             return (float(td.microseconds) / 10**6) + sec
 
-    def fix_location(self, location):
+    @staticmethod
+    def fix_location(location):
         # The split on / is required for airport like KDPA where
         # the location is "Chicago / west Chicago, IL"
         location = location.split('/')[-1]
