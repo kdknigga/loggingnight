@@ -1,1 +1,1 @@
-web gunicorn loggingnight:app
+web gunicorn webapp:application

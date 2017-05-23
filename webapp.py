@@ -7,14 +7,14 @@ from dateutil import parser as dateparser
 from flask import Flask, render_template, request
 from loggingnight import LoggingNight
 
-app = Flask('__name__')
-app.config['DEBUG'] = True
+application = Flask('__name__')
+application.config['DEBUG'] = True
 
-@app.route('/')
+@application.route('/')
 def index():
     return render_template('index.html')
 
-@app.route('/lookup', methods=['GET', 'POST'])
+@application.route('/lookup', methods=['GET', 'POST'])
 def lookup():
     if request.method == 'POST':
         icao_identifier = request.form['airport']
@@ -45,6 +45,6 @@ def lookup():
     return json.dumps(result)
         
 if __name__ == '__main__':
-    app.run()
+    application.run()
         
 # vi: modeline tabstop=8 expandtab shiftwidth=4 softtabstop=4 syntax=python
