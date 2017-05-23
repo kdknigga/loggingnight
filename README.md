@@ -1,6 +1,9 @@
 # loggingnight
 Trouble remembering what the FAA says about night time logging and currency?  I gotchu, bro.
 
+## New!
+See the web version being developed in [the web-dev branch](/kdknigga/loggingnight/tree/web-dev) running live at http://loggingnight-dev.knigga.net/
+
 ## Setup
 Requires python (tested on 2.7)
 
