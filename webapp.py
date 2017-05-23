@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import datetime
+import flask
 import json
 from dateutil import parser as dateparser
 from flask import Flask, render_template, request
@@ -22,12 +23,15 @@ def lookup():
         icao_identifier = request.args.get('airport')
         date = dateparser.parse(request.args.get('date', datetime.date.today().isoformat())).date()
     else:
-        abort(400)
+        flask.abort(400)
 
-    try:
-        ln = LoggingNight(icao_identifier, date)
-    except:
-        abort(500)
+
+    #try:
+    #    ln = LoggingNight(icao_identifier, date, None, None)
+    #except:
+    #    flask.abort(500)
+
+    ln = LoggingNight(icao_identifier, date, None, None)
 
     result = dict(
         airport=icao_identifier,
