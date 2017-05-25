@@ -75,16 +75,29 @@
         });
 
     });
+
+    if ("{{ icao_identifier }}" != "None")
+    {
+        $("#inp").submit();
+    };
+
   } );
   </script>
 </head>
 <body style="text-align: center;">
 
 <form id="inp" target="act">
+{% if icao_identifier %}
+<p style="font-size: 20px">ICAO code</p>
+<p><input type="text" name="airport" id="airport" value="{{ icao_identifier }}"></p>
+<p style="font-size: 20px">Date</p>
+<p><input type="text" name="date" id="date" value="{{ date }}"></p>
+{% else %}
 <p style="font-size: 20px">ICAO code</p>
 <p><input type="text" name="airport" id="airport"></p>
 <p style="font-size: 20px">Date</p>
 <p><input type="text" name="date" id="date"></p>
+{% endif %}
 <p><input type="submit" class="btn btn-primary" id="submit_btn" value="Get Night"></p>
 </form>
 

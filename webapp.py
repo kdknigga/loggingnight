@@ -12,26 +12,20 @@ application.config['DEBUG'] = True
 
 @application.route('/')
 def index():
-    return render_template('index.html')
+    icao_identifier = request.args.get('airport')
+    date = dateparser.parse(request.args.get('date', datetime.date.today().isoformat())).date()
 
-@application.route('/lookup', methods=['GET', 'POST'])
+    return render_template('index.html', icao_identifier=icao_identifier, date=date.isoformat())
+
+@application.route('/lookup', methods=['POST'])
 def lookup():
-    if request.method == 'POST':
-        icao_identifier = request.form['airport']
-        date = dateparser.parse(request.form['date']).date()
-    elif request.method == 'GET':
-        icao_identifier = request.args.get('airport')
-        date = dateparser.parse(request.args.get('date', datetime.date.today().isoformat())).date()
-    else:
-        flask.abort(400)
+    icao_identifier = request.form['airport']
+    date = dateparser.parse(request.form['date']).date()
 
-
-    #try:
-    #    ln = LoggingNight(icao_identifier, date, None, None)
-    #except:
-    #    flask.abort(500)
-
-    ln = LoggingNight(icao_identifier, date, None, None)
+    try:
+        ln = LoggingNight(icao_identifier, date, None, None)
+    except:
+        flask.abort(500)
 
     result = dict(
         airport=icao_identifier,
