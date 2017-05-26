@@ -3,6 +3,7 @@
 import datetime
 import flask
 import json
+import requests
 from dateutil import parser as dateparser
 from flask import Flask, render_template, request
 from loggingnight import LoggingNight
@@ -24,6 +25,8 @@ def lookup():
 
     try:
         ln = LoggingNight(icao_identifier, date, None, None)
+    except Exception as e:
+        return str(e)
     except:
         flask.abort(500)
 

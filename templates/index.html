@@ -49,25 +49,31 @@
   <!--script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script-->
   <script>
   $( function() {
-    $("#date").datepicker();
+    $("#date").datepicker({ dateFormat: "yy-mm-dd" });
     $("#inp").submit(function(event) {
       event.preventDefault();
       $('#submit_btn').prop('disabled', true);
       $.post('/lookup', $.param($('#inp input')), function(data) {
         if (data.error) {
           
-          alert('Sorry, an error occurred');
+          $('#error_display').text("There has been an error: ");
+          $('#error_display').append(data.responseText);
         } else {
+          $('#error_display').text("");
           $('#out_name').text(data.name);
           $('#out_date').text(data.date);
           $('#out_sunset').text(data.sunset);
           $('#out_end_civil').text(data.end_civil);
           $('#out_one_hour').text(data.one_hour);
           $('#output').show();
+
+          var queryString = "?airport=" + encodeURIComponent($('#airport').val()) + "&date=" + encodeURIComponent($('#date').val());
+          window.history.pushState(null, null, queryString);
         }
       }, 'json')
-        .fail(function() { 
-          alert('Sorry, an error occurred');
+        .fail(function(data) { 
+          $('#error_display').text("An error has occurred: ");
+          $('#error_display').append(data.responseText);
           $('#output').hide(); 
         })
         .always(function() {
@@ -76,6 +82,8 @@
 
     });
 
+    $('#error_display').text("");
+    $('#submit_btn').prop('disabled', false);
     if ("{{ icao_identifier }}" != "None")
     {
         $("#inp").submit();
@@ -85,7 +93,7 @@
   </script>
 </head>
 <body style="text-align: center;">
-
+<p id="error_display"></p>
 <form id="inp" target="act">
 {% if icao_identifier %}
 <p style="font-size: 20px">ICAO code</p>

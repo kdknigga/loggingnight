@@ -76,11 +76,9 @@ class LoggingNight(object):
         self.airport = self.web_query(self.AIRPORTINFO_URL, params={'icao': self.icao})
         if not 'response' in self.airport or not 'location' in self.airport['response'] \
         or not self.airport['response']['location']:
-            raise self.LocationException('Unable to find location information for %s' % self.icao)
+            raise self.LocationException('Unable to find location information for %s.  Make sure you\'re using an ICAO identifier (KDPA vs DPA)' % self.icao)
 
-        # The split on / is required for airport like KDPA where
-        # the location is "Chicago / west Chicago, IL"
-        self.location = self.fix_location(self.airport['response']['location'].split('/')[-1])
+        self.location = self.fix_location(self.airport['response']['location'])
 
         self.usno = {}
         self.in_zulu = False
@@ -90,13 +88,15 @@ class LoggingNight(object):
             self.in_zulu = False
 
         if not 'response' in self.usno or not 'sundata' in self.usno['response']:
-            self.coords = self.airport['response']['latitude'] + ',' + self.airport['response']['longitude']
+            # The USNO hasn't recognized our location, probably.  Try again with lat+long.
+            # Lookups with lat+long require a timezone
+            self.location = self.airport['response']['latitude'] + ',' + self.airport['response']['longitude']
             self.offset = self.tz if self.tz is not None else '0'
-            self.usno = self.web_query(self.USNO_URL, params={'coords': self.coords, 'date': self.date.strftime('%m/%d/%Y'), 'tz': self.offset})
+            self.usno = self.web_query(self.USNO_URL, params={'coords': self.location, 'date': self.date.strftime('%m/%d/%Y'), 'tz': self.offset})
             self.in_zulu = float(self.offset) == 0
 
         if not 'response' in self.usno or not 'sundata' in self.usno['response']:
-            raise self.AstronomicalException('Unable to find sun data')
+            raise self.AstronomicalException('Unable to find sun data for %s' % self.location)
 
         self.phenTimes = dict((i['phen'], i['time']) for i in self.usno['response']['sundata'])
 
