@@ -14,14 +14,22 @@ application.config['DEBUG'] = True
 @application.route('/')
 def index():
     icao_identifier = request.args.get('airport')
-    date = dateparser.parse(request.args.get('date', datetime.date.today().isoformat())).date()
+
+    try:
+        date = dateparser.parse(request.args.get('date', datetime.date.today().isoformat())).date()
+    except ValueError:
+        date = datetime.date.today()
 
     return render_template('index.html', icao_identifier=icao_identifier, date=date.isoformat())
 
 @application.route('/lookup', methods=['POST'])
 def lookup():
     icao_identifier = request.form['airport']
-    date = dateparser.parse(request.form['date']).date()
+
+    try:
+        date = dateparser.parse(request.form['date']).date()
+    except ValueError:
+        return "Unable to understand date %s" % request.form['date']
 
     try:
         ln = LoggingNight(icao_identifier, date, None, None)
