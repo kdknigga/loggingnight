@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import os
 import datetime
 import flask
 import json
@@ -9,7 +10,12 @@ from flask import Flask, render_template, request
 from loggingnight import LoggingNight
 
 application = Flask('__name__')
-application.config['DEBUG'] = False
+
+dev_mode = os.environ.get('LOGGINGNIGHT_DEV', 'false')
+if dev_mode == "true":
+    application.config['DEBUG'] = True
+else:
+    application.config['DEBUG'] = False
 
 @application.route('/')
 def index():
