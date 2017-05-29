@@ -9,7 +9,7 @@ from flask import Flask, render_template, request
 from loggingnight import LoggingNight
 
 application = Flask('__name__')
-application.config['DEBUG'] = True
+application.config['DEBUG'] = False
 
 @application.route('/')
 def index():
@@ -29,12 +29,12 @@ def lookup():
     try:
         date = dateparser.parse(request.form['date']).date()
     except ValueError:
-        return "Unable to understand date %s" % request.form['date']
+        return "Unable to understand date %s" % request.form['date'], 400
 
     try:
         ln = LoggingNight(icao_identifier, date, None, None)
     except Exception as e:
-        return str(e)
+        return str(e), 400
     except:
         flask.abort(500)
 
