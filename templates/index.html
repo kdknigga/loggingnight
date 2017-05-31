@@ -67,6 +67,12 @@
           $('#out_one_hour').text(data.one_hour);
           $('#output').show();
 
+          if ("{{ dev_mode }}" == "true")
+          {
+              $('#airport_debug').text(data.airport_debug);
+              $('#usno_debug').text(data.usno_debug);
+          }
+
           var queryString = "?airport=" + encodeURIComponent($('#airport').val()) + "&date=" + encodeURIComponent($('#date').val());
           window.history.pushState(null, null, queryString);
         }
@@ -93,6 +99,11 @@
   </script>
 </head>
 <body style="text-align: center;">
+{% if dev_mode == "true" %}
+<p id="dev_mode_warning">
+<b>Warning: This is the dev website.  Production can be found at <a href="http://loggingnight.org/">http://loggingnight.org/</a></b>
+</p>
+{% endif %}
 <p id="error_display"></p>
 <form id="inp" target="act">
 {% if icao_identifier %}
@@ -123,6 +134,10 @@
 <div id="out_one_hour" class="time"></div>
 <div class="helper">Must be night current to carry passengers and logging of night takeoffs and landings can start (<a href="https://www.law.cornell.edu/cfr/text/14/61.57">14 CFR 61.57(b)</a>)</div>
 </div>
+{% if dev_mode == "true" %}
+<pre id="airport_debug"></pre>
+<pre id="usno_debug"></pre>
+{% endif %}
  
 <div id="footer"><a href="https://github.com/kdknigga/loggingnight">check out the source on github!</a></div>
 

@@ -4,7 +4,6 @@ import os
 import datetime
 import flask
 import json
-import requests
 from dateutil import parser as dateparser
 from flask import Flask, render_template, request
 from loggingnight import LoggingNight
@@ -13,6 +12,7 @@ application = Flask('__name__')
 
 dev_mode = os.environ.get('LOGGINGNIGHT_DEV', 'false')
 if dev_mode == "true":
+    import pprint
     application.config['DEBUG'] = True
 else:
     application.config['DEBUG'] = False
@@ -26,7 +26,7 @@ def index():
     except ValueError:
         date = datetime.date.today()
 
-    return render_template('index.html', icao_identifier=icao_identifier, date=date.isoformat())
+    return render_template('index.html', dev_mode=dev_mode, icao_identifier=icao_identifier, date=date.isoformat())
 
 @application.route('/lookup', methods=['POST'])
 def lookup():
@@ -44,14 +44,26 @@ def lookup():
     except:
         flask.abort(500)
 
-    result = dict(
-        airport=icao_identifier,
-        name=ln.name,
-        date=date.isoformat(),
-        sunset=ln.sun_set.strftime('%I:%M %p'),
-        end_civil=ln.end_civil_twilight.strftime('%I:%M %p'),
-        one_hour=ln.hour_after_sunset.strftime('%I:%M %p')
-        )
+    if dev_mode == "true":
+        result = dict(
+            airport=icao_identifier,
+            name=ln.name,
+            date=date.isoformat(),
+            sunset=ln.sun_set.strftime('%I:%M %p'),
+            end_civil=ln.end_civil_twilight.strftime('%I:%M %p'),
+            one_hour=ln.hour_after_sunset.strftime('%I:%M %p'),
+            airport_debug=pprint.pformat(ln.airport, indent=4),
+            usno_debug=pprint.pformat(ln.usno, indent=4)
+            )
+    else:
+        result = dict(
+            airport=icao_identifier,
+            name=ln.name,
+            date=date.isoformat(),
+            sunset=ln.sun_set.strftime('%I:%M %p'),
+            end_civil=ln.end_civil_twilight.strftime('%I:%M %p'),
+            one_hour=ln.hour_after_sunset.strftime('%I:%M %p')
+            )
 
     return json.dumps(result)
         

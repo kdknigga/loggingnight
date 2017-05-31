@@ -5,6 +5,16 @@ import datetime
 import re
 import requests
 from dateutil import parser as dateparser
+from sys import modules
+
+try:
+    import requests_cache
+    import schedule
+except:
+    pass
+else:
+    requests_cache.install_cache('loggingnight_cache', backend='sqlite', expire_after=86400)
+    schedule.every(6).hours.do(requests_cache.core.remove_expired_responses)
 
 def makedate(datestring):
     return dateparser.parse(datestring).date()
@@ -47,6 +57,9 @@ class LoggingNight(object):
         stats['query_time'] = self.total_seconds(r.elapsed)
         stats['status_code'] = r.status_code
         stats['status_text'] = r.reason
+        stats['headers'] = r.headers
+        if hasattr(r, 'from_cache'):
+            stats['from_cache'] = r.from_cache
 
         if exit_on_http_error:
             r.raise_for_status()
@@ -60,10 +73,13 @@ class LoggingNight(object):
         """An error occured finding astronomical information"""
 
     def __init__(self, icao, date, zulu, offset):
-        self.icao = icao
+        self.icao = icao.upper()
         self.date = date
         self.zulu = zulu
         self.offset = offset
+
+        if 'schedule' in modules and 'requests_cache' in modules:
+            schedule.run_pending()
 
         self.tz = None
         if self.offset is not None and self.zulu == True:
