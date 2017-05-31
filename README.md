@@ -5,7 +5,7 @@ Trouble remembering what the FAA says about night time logging and currency?  I 
 loggingnight is both a web service and commandline application to simplify figuring out the rules around night flight in the USA.  Not only will loggingnight enumerate the different definitions of night and the rules that go with them, but it will also look up sunset information from the US Naval Observatory and show times taylored to a date and location.
 
 ## The web version
-The production version (the master branch) lives at http://www.loggingnight.org/ and the development version (the dev branch) can be found at http://dev.loggingnight.org/
+The production version (the master branch) lives at http://loggingnight.org/ and the development version (the dev branch) can be found at http://dev.loggingnight.org/
 
 ### Running the web version locally
 I would recommend using virtualenv.
