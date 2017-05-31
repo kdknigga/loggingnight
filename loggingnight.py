@@ -10,7 +10,7 @@ from sys import modules
 try:
     import requests_cache
     import schedule
-except:
+except ImportError:
     pass
 else:
     requests_cache.install_cache('loggingnight_cache', backend='sqlite', expire_after=86400)
