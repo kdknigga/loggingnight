@@ -9,12 +9,8 @@ from sys import modules
 
 try:
     import requests_cache
-    import schedule
 except ImportError:
     pass
-else:
-    requests_cache.install_cache('loggingnight_cache', backend='sqlite', expire_after=86400)
-    schedule.every(6).hours.do(requests_cache.core.remove_expired_responses)
 
 def makedate(datestring):
     return dateparser.parse(datestring).date()
@@ -25,6 +21,22 @@ class LoggingNight(object):
     AIRPORTINFO_URL = 'http://www.airport-data.com/api/ap_info.json'
     USNO_URL = 'http://api.usno.navy.mil/rstt/oneday'
     ONE_HOUR = datetime.timedelta(hours=1)
+
+    @staticmethod
+    def enable_cache(expire_after=172800):
+        if not 'requests_cache' in modules:
+            return False
+
+        requests_cache.install_cache('loggingnight_cache', backend='sqlite', expire_after=expire_after)
+        return True
+
+    @staticmethod
+    def garbage_collect_cache():
+        if LoggingNight.enable_cache:
+            requests_cache.core.remove_expired_responses()
+            #print("running cache garbage collection")
+        #else:
+            #print("unable to collect garbage, unable to enable_cache")
 
     @staticmethod
     def total_seconds(td):
@@ -72,14 +84,17 @@ class LoggingNight(object):
     class AstronomicalException(IOError):
         """An error occured finding astronomical information"""
 
-    def __init__(self, icao, date, zulu, offset):
+    def __init__(self, icao, date, zulu=None, offset=None, try_cache=False):
         self.icao = icao.upper()
         self.date = date
         self.zulu = zulu
         self.offset = offset
+        self.try_cache = try_cache
 
-        if 'schedule' in modules and 'requests_cache' in modules:
-            schedule.run_pending()
+        if self.try_cache:
+            self.cache_enabled = self.enable_cache()
+        else:
+            self.cache_enabled = False
 
         self.tz = None
         if self.offset is not None and self.zulu == True:
@@ -144,9 +159,10 @@ if __name__ == "__main__":
     parser.add_argument("-D", "--debug", action='count')
     parser.add_argument("-o", "--offset", type=float, help="Time zone offset in hours from Zulu, -12.0 to +14.0")
     parser.add_argument("-z", "--zulu", action='store_true', help="Show times in Zulu")
+    parser.add_argument("-c", "--cache", action='store_true', help="Attempt to use cache to reduce remote API calls")
     args = parser.parse_args()
 
-    ln = LoggingNight(args.airport, args.date, args.zulu, args.offset)
+    ln = LoggingNight(args.airport, args.date, zulu=args.zulu, offset=args.offset, try_cache=args.cache)
 
     debug_print("Airport debug info:", level=2)
     debug_print(pprint.pformat(ln.airport, indent=4), level=2)

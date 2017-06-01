@@ -4,6 +4,9 @@ import os
 import datetime
 import flask
 import json
+import schedule
+import threading
+import time
 from dateutil import parser as dateparser
 from flask import Flask, render_template, request
 from loggingnight import LoggingNight
@@ -16,6 +19,22 @@ if dev_mode == "true":
     application.config['DEBUG'] = True
 else:
     application.config['DEBUG'] = False
+
+@application.before_first_request
+def enable_housekeeping(run_interval=3600):
+    cease_continuous_run = threading.Event()
+
+    class ScheduleThread(threading.Thread):
+        @classmethod
+        def run(cls):
+            while not cease_continuous_run.is_set():
+                schedule.run_pending()
+                time.sleep(run_interval)
+
+    continuous_thread = ScheduleThread()
+    continuous_thread.start()
+
+    schedule.every(1).hour.do(LoggingNight.garbage_collect_cache)
 
 @application.route('/')
 def index():
@@ -38,7 +57,7 @@ def lookup():
         return "Unable to understand date %s" % request.form['date'], 400
 
     try:
-        ln = LoggingNight(icao_identifier, date, None, None)
+        ln = LoggingNight(icao_identifier, date, try_cache=True)
     except Exception as e:
         return str(e), 400
     except:
