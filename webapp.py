@@ -8,7 +8,7 @@ import schedule
 import threading
 import time
 from dateutil import parser as dateparser
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, Response
 from loggingnight import LoggingNight
 
 application = Flask('__name__')
@@ -89,7 +89,7 @@ def lookup():
 @application.route('/displayCache', methods=['GET'])
 def displayCache():
     if LoggingNight.enable_cache():
-        return json.dumps(list((str(timestamp), url) for timestamp, url in LoggingNight.get_cache_entries()))
+        return Response(json.dumps(list((str(timestamp), url) for timestamp, url in LoggingNight.get_cache_entries())), mimetype='application/json')
     else:
         return False
         
