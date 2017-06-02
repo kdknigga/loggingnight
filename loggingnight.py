@@ -39,6 +39,14 @@ class LoggingNight(object):
             #print("unable to collect garbage, unable to enable_cache")
 
     @staticmethod
+    def get_cache_entries():
+        if LoggingNight.enable_cache:
+            cache = requests_cache.core.get_cache()
+            for key in cache.responses:
+                response, timestamp = cache.responses[key]
+                yield (timestamp, response.url)
+
+    @staticmethod
     def total_seconds(td):
         if hasattr(td, 'total_seconds'):
             return td.total_seconds()

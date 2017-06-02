@@ -85,6 +85,13 @@ def lookup():
             )
 
     return json.dumps(result)
+
+@application.route('/displayCache', methods=['GET'])
+def displayCache():
+    if LoggingNight.enable_cache():
+        return json.dumps(list((str(timestamp), url) for timestamp, url in LoggingNight.get_cache_entries()))
+    else:
+        return False
         
 if __name__ == '__main__':
     application.run()
