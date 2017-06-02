@@ -25,8 +25,8 @@ def enable_housekeeping(run_interval=3600):
     cease_continuous_run = threading.Event()
 
     class ScheduleThread(threading.Thread):
-        @classmethod
-        def run(cls):
+        @staticmethod
+        def run():
             while not cease_continuous_run.is_set():
                 schedule.run_pending()
                 time.sleep(run_interval)
