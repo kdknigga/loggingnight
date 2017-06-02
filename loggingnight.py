@@ -34,9 +34,9 @@ class LoggingNight(object):
     def garbage_collect_cache():
         if LoggingNight.enable_cache:
             requests_cache.core.remove_expired_responses()
-            #print("running cache garbage collection")
-        #else:
-            #print("unable to collect garbage, unable to enable_cache")
+            print("running cache garbage collection")
+        else:
+            print("unable to collect garbage, unable to enable_cache")
 
     @staticmethod
     def get_cache_entries():
