@@ -34,7 +34,7 @@ def enable_housekeeping(run_interval=3600):
     continuous_thread = ScheduleThread()
     continuous_thread.start()
 
-    schedule.every(1).hour.do(LoggingNight.garbage_collect_cache)
+    schedule.every(6).hour.do(LoggingNight.garbage_collect_cache)
 
 @application.route('/')
 def index():
