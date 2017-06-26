@@ -93,6 +93,15 @@
         $("#inp").submit();
     };
 
+    function toJSONLocal (date) {
+        var local = new Date(date);
+        local.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+        return local.toJSON().slice(0, 10);
+    }
+
+    var date = new Date();
+    $('#date').prop('placeholder', toJSONLocal(date));
+
   } );
   </script>
 </head>
@@ -108,12 +117,12 @@
 <p style="font-size: 20px">ICAO code</p>
 <p><input type="text" name="airport" id="airport" value="{{ icao_identifier }}"></p>
 <p style="font-size: 20px">Date</p>
-<p><input type="text" name="date" id="date" value="{{ date }}"></p>
+<p><input type="text" name="date" id="date" autocomplete="off" value="{{ date }}"></p>
 {% else %}
 <p style="font-size: 20px">ICAO code</p>
-<p><input type="text" name="airport" id="airport"></p>
+<p><input type="text" name="airport" id="airport" placeholder="KDPA"></p>
 <p style="font-size: 20px">Date</p>
-<p><input type="text" name="date" id="date" autocomplete="off"></p>
+<p><input type="text" name="date" id="date" autocomplete="off" placeholder=""></p>
 {% endif %}
 <p><input type="submit" class="btn btn-primary" id="submit_btn" value="Get Night"></p>
 </form>
