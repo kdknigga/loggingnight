@@ -1,0 +1,9 @@
+http://loggingnight.org/?airport=KATL
+http://loggingnight.org/?airport=KLAX
+http://loggingnight.org/?airport=KORD
+http://loggingnight.org/?airport=KDFW
+http://loggingnight.org/?airport=KJFK
+http://loggingnight.org/?airport=KDPA
+http://loggingnight.org/?airport=KARR
+http://loggingnight.org/?airport=KOKK
+http://loggingnight.org/?airport=KOKK&date=1983-08-23
