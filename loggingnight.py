@@ -114,9 +114,11 @@ class LoggingNight(object):
             self.tz = str(self.offset)
 
         self.airport = self.web_query(self.AIRPORTINFO_URL, params={'icao': self.icao})
+
         if not self.airport['query_stats']['status_code'] in {200, 304}:
             raise self.LocationException('Received the following error looking up the airport: %d %s' % \
                 (self.airport['query_stats']['status_code'], self.airport['query_stats']['status_text']))
+
         if not 'response' in self.airport or not 'location' in self.airport['response'] \
         or not self.airport['response']['location']:
             raise self.LocationException('Unable to find location information for %s.  Make sure you\'re using an ICAO identifier (for example, KDPA not DPA)' % self.icao)
@@ -141,7 +143,7 @@ class LoggingNight(object):
             self.in_zulu = float(self.offset) == 0
 
         if not self.usno['query_stats']['status_code'] in {200, 304}:
-            raise self.AstronomicalException('The USNO returned the following error: %d %s' % \
+            raise self.AstronomicalException('The USNO seems to be having problems: %d %s' % \
                 (self.usno['query_stats']['status_code'], self.usno['query_stats']['status_text']))
 
         if not 'response' in self.usno or not 'sundata' in self.usno['response']:

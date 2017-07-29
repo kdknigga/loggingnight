@@ -90,7 +90,6 @@ def lookup():
     else:
         date = datetime.date.today()
 
-    result = do_lookup(icao_identifier, date)
     try:
         result = do_lookup(icao_identifier, date)
     except Exception as e:
