@@ -45,23 +45,15 @@ def index():
     except ValueError:
         date = datetime.date.today()
 
-    return render_template('index.html', dev_mode=dev_mode, icao_identifier=icao_identifier, date=date.isoformat())
+    if icao_identifier:
+        result = do_lookup(icao_identifier, date)
+    else:
+        result = None
 
-@application.route('/lookup', methods=['POST'])
-def lookup():
-    icao_identifier = request.form['airport']
+    return render_template('index.html', dev_mode=dev_mode, result=result)
 
-    try:
-        date = dateparser.parse(request.form['date']).date()
-    except ValueError:
-        return "Unable to understand date %s" % request.form['date'], 400
-
-    try:
-        ln = LoggingNight(icao_identifier, date, try_cache=True)
-    except Exception as e:
-        return str(e), 400
-    except:
-        flask.abort(500)
+def do_lookup(icao_identifier, date):
+    ln = LoggingNight(icao_identifier, date, try_cache=True)
 
     if dev_mode == "true":
         result = dict(
@@ -83,6 +75,27 @@ def lookup():
             end_civil=ln.end_civil_twilight.strftime('%I:%M %p'),
             one_hour=ln.hour_after_sunset.strftime('%I:%M %p')
             )
+
+    return result
+
+@application.route('/lookup', methods=['POST'])
+def lookup():
+    icao_identifier = request.form['airport']
+
+    if request.form['date']:
+        try:
+            date = dateparser.parse(request.form['date']).date()
+        except ValueError:
+            return "Unable to understand date %s" % request.form['date'], 400
+    else:
+        date = datetime.date.today()
+
+    try:
+        result = do_lookup(icao_identifier, date)
+    except Exception as e:
+        return str(e), 400
+    except:
+        flask.abort(500)
 
     return json.dumps(result)
 
