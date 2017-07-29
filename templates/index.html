@@ -47,7 +47,9 @@
   <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
   <script>
   $( function() {
+    var $has_results = "{{ result != None }}".toLowerCase();
     $("#date").datepicker({ dateFormat: "yy-mm-dd" });
+    if ($has_results == "true"){ $("#date").text("{{ result['date'] }}")};
     $("#inp").submit(function(event) {
       event.preventDefault();
       $('#submit_btn').prop('disabled', true);
@@ -88,10 +90,11 @@
 
     $('#error_display').text("");
     $('#submit_btn').prop('disabled', false);
-    if ("{{ icao_identifier }}" != "None")
+    if ($has_results == "true")
     {
-        $("#inp").submit();
+        $('#output').show();
     };
+
 
   } );
   </script>
@@ -104,11 +107,11 @@
 {% endif %}
 <p id="error_display"></p>
 <form id="inp" target="act">
-{% if icao_identifier %}
+{% if result %}
 <p style="font-size: 20px">ICAO code</p>
-<p><input type="text" name="airport" id="airport" value="{{ icao_identifier }}"></p>
+<p><input type="text" name="airport" id="airport" value="{{ result['airport'].upper() }}"></p>
 <p style="font-size: 20px">Date</p>
-<p><input type="text" name="date" id="date" autocomplete="off" value="{{ date }}"></p>
+<p><input type="text" name="date" id="date" value="{{ result['date'] }}" autocomplete="off"></p>
 {% else %}
 <p style="font-size: 20px">ICAO code</p>
 <p><input type="text" name="airport" id="airport"></p>
@@ -118,18 +121,18 @@
 <p><input type="submit" class="btn btn-primary" id="submit_btn" value="Get Night"></p>
 </form>
 
-<div style="display: none;" id="output">
+<div {% if not result %}style="display: none;"{% endif %} id="output">
 <hr>
-<div id="out_name"></div>
-<div id="out_date" class="helper"></div>
+<div id="out_name">{% if result['airport'] is defined %}{{ result['name'] }}{% endif %}</div>
+<div id="out_date" class="helper">{% if result['airport'] is defined %}{{ result['date'] }}{% endif %}</div>
 <div class="title">Sunset</div>
-<div id="out_sunset" class="time"></div>
+<div id="out_sunset" class="time">{% if result['airport'] is defined %}{{ result['sunset'] }}{% endif %}</div>
 <div class="helper">Position lights required (<a href="https://www.law.cornell.edu/cfr/text/14/91.209">14 CFR 91.209(a)</a>)</div>
 <div class="title">End of civil twilight</div>
-<div id="out_end_civil" class="time"></div>
+<div id="out_end_civil" class="time">{% if result['airport'] is defined %}{{ result['end_civil'] }}{% endif %}</div>
 <div class="helper">Logging of night time can start and aircraft must be night equipped (<a href="https://www.law.cornell.edu/cfr/text/14/61.51">14 CFR 61.51(b)(3)(i)</a>, <a href="https://www.law.cornell.edu/cfr/text/14/91.205">14 CFR 91.205(c)</a>, and <a href="https://www.law.cornell.edu/cfr/text/14/1.1">14 CFR 1.1</a>)</div>
 <div class="title">One hour after sun set</div>
-<div id="out_one_hour" class="time"></div>
+<div id="out_one_hour" class="time">{% if result['airport'] is defined %}{{ result['one_hour'] }}{% endif %}</div>
 <div class="helper">Must be night current to carry passengers and logging of night takeoffs and landings can start (<a href="https://www.law.cornell.edu/cfr/text/14/61.57">14 CFR 61.57(b)</a>)</div>
 </div>
 {% if dev_mode == "true" %}
