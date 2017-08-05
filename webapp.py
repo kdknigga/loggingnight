@@ -46,7 +46,13 @@ def index():
         date = datetime.date.today()
 
     if icao_identifier:
-        result = do_lookup(icao_identifier, date)
+        try:
+            result = do_lookup(icao_identifier, date)
+        except Exception as e:
+            result = {'airport': icao_identifier,
+                      'date': date.isoformat(),
+                      'error': str(e)}
+            return render_template('index.html', dev_mode=dev_mode, result=result), 400
     else:
         result = None
 

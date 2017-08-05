@@ -48,8 +48,13 @@
   <script>
   $( function() {
     var $has_results = "{{ result != None }}".toLowerCase();
+{% if results and results['error'] %}
+    var $has_error = true;
+{% else %}
+    var $has_error = false;
+{% endif %}
     $("#date").datepicker({ dateFormat: "yy-mm-dd" });
-    if ($has_results == "true"){ $("#date").text("{{ result['date'] }}")};
+    if ($has_results == "true"){$("#date").text("{{ result['date'] }}")};
     $("#inp").submit(function(event) {
       event.preventDefault();
       $('#submit_btn').prop('disabled', true);
@@ -69,8 +74,9 @@
 
           if ("{{ dev_mode }}" == "true")
           {
-              $('#airport_debug').text(data.airport_debug);
-              $('#usno_debug').text(data.usno_debug);
+              $('#debug').text(data.airport_debug);
+              $('#debug').append("\n");
+              $('#debug').append(data.airport_debug);
           }
 
           var queryString = "?airport=" + encodeURIComponent($('#airport').val()) + "&date=" + encodeURIComponent($('#date').val());
@@ -88,12 +94,15 @@
 
     });
 
-    $('#error_display').text("");
-    $('#submit_btn').prop('disabled', false);
+    if ($has_error == False)
+    {
+        $('#error_display').text("");
+    }
     if ($has_results == "true")
     {
         $('#output').show();
     };
+    $('#submit_btn').prop('disabled', false);
 
 
   } );
@@ -105,7 +114,7 @@
 <b>Warning: This is the dev website.  Production can be found at <a href="http://loggingnight.org/">http://loggingnight.org/</a></b>
 </p>
 {% endif %}
-<p id="error_display"></p>
+<p id="error_display">{% if result['error'] %}There is an error: {{ result['error'] }}{% endif %}</p>
 <form id="inp">
 {% if result %}
 <p style="font-size: 20px">ICAO code</p>
@@ -121,7 +130,7 @@
 <p><input type="submit" class="btn btn-primary" id="submit_btn" value="Get Night"></p>
 </form>
 
-<div {% if not result %}style="display: none;"{% endif %} id="output">
+<div {% if not result or result['error'] %}style="display: none;"{% endif %} id="output">
 <hr>
 <div id="out_name">{% if result['airport'] is defined %}{{ result['name'] }}{% endif %}</div>
 <div id="out_date" class="helper">{% if result['airport'] is defined %}{{ result['date'] }}{% endif %}</div>
@@ -136,8 +145,7 @@
 <div class="helper">Must be night current to carry passengers and logging of night takeoffs and landings can start (<a href="https://www.law.cornell.edu/cfr/text/14/61.57">14 CFR 61.57(b)</a>)</div>
 </div>
 {% if dev_mode == "true" %}
-<pre id="airport_debug"></pre>
-<pre id="usno_debug"></pre>
+<pre id="debug" style="text-align: left;">{% if result %}{{ result|pprint }}{% endif %}</pre>
 {% endif %}
  
 <div id="footer"><a href="https://github.com/kdknigga/loggingnight">check out the source on github!</a><br />
