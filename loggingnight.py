@@ -23,7 +23,7 @@ class LoggingNight(object):
     ONE_HOUR = datetime.timedelta(hours=1)
 
     @staticmethod
-    def enable_cache(expire_after=172800):
+    def enable_cache(expire_after=691200):
         if not 'requests_cache' in modules:
             return False
 
