@@ -58,6 +58,12 @@
     $("#inp").submit(function(event) {
       event.preventDefault();
       $('#submit_btn').prop('disabled', true);
+      var queryString = "?airport=" + encodeURIComponent($('#airport').val()) + "&date=" + encodeURIComponent($('#date').val());
+      window.history.pushState(null, null, queryString);
+      if (typeof window.ga === "function") { 
+        window.ga('set', 'page', '/' + queryString);
+        window.ga('send', 'pageview');
+      };
       $.post('/lookup', $.param($('#inp input')), function(data) {
         if (data.error) {
           
@@ -79,8 +85,6 @@
               $('#debug').append(data.airport_debug);
           }
 
-          var queryString = "?airport=" + encodeURIComponent($('#airport').val()) + "&date=" + encodeURIComponent($('#date').val());
-          window.history.pushState(null, null, queryString);
         }
       }, 'json')
         .fail(function(data) { 
@@ -94,7 +98,7 @@
 
     });
 
-    if ($has_error == False)
+    if ($has_error == false)
     {
         $('#error_display').text("");
     }
