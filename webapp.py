@@ -61,14 +61,19 @@ def index():
 def do_lookup(icao_identifier, date):
     ln = LoggingNight(icao_identifier, date, try_cache=True)
 
+    if ln.in_zulu:
+        time_format = '%H%M Zulu'
+    else:
+        time_format = '%I:%M %p'
+
     if dev_mode == "true":
         result = dict(
             airport=icao_identifier,
             name=ln.name,
             date=date.isoformat(),
-            sunset=ln.sun_set.strftime('%I:%M %p'),
-            end_civil=ln.end_civil_twilight.strftime('%I:%M %p'),
-            one_hour=ln.hour_after_sunset.strftime('%I:%M %p'),
+            sunset=ln.sun_set.strftime(time_format),
+            end_civil=ln.end_civil_twilight.strftime(time_format),
+            one_hour=ln.hour_after_sunset.strftime(time_format),
             airport_debug=pprint.pformat(ln.airport, indent=4),
             usno_debug=pprint.pformat(ln.usno, indent=4)
             )
@@ -77,9 +82,9 @@ def do_lookup(icao_identifier, date):
             airport=icao_identifier,
             name=ln.name,
             date=date.isoformat(),
-            sunset=ln.sun_set.strftime('%I:%M %p'),
-            end_civil=ln.end_civil_twilight.strftime('%I:%M %p'),
-            one_hour=ln.hour_after_sunset.strftime('%I:%M %p')
+            sunset=ln.sun_set.strftime(time_format),
+            end_civil=ln.end_civil_twilight.strftime(time_format),
+            one_hour=ln.hour_after_sunset.strftime(time_format)
             )
 
     return result
