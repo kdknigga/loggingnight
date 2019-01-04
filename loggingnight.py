@@ -72,7 +72,7 @@ class LoggingNight(object):
         headers = headers or {}
         stats = {}
 
-        r = requests.get(url, headers=headers, params=params, timeout=10)
+        r = requests.get(url, headers=headers, params=params, timeout=10, verify=False)
         stats['final_url'] = r.url
         stats['query_time'] = self.total_seconds(r.elapsed)
         stats['status_code'] = r.status_code
