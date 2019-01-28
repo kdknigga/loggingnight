@@ -18,7 +18,7 @@ def makedate(datestring):
 class LoggingNight(object):
     """Provide an ICAO code and a date and get what the FAA considers night"""
 
-    AIRPORTINFO_URL = 'http://www.airport-data.com/api/ap_info.json'
+    AIRPORTINFO_URL = 'https://api.aeronautical.info/airport/dev/'
     USNO_URL = 'http://api.usno.navy.mil/rstt/oneday'
     ONE_HOUR = datetime.timedelta(hours=1)
 
@@ -63,7 +63,7 @@ class LoggingNight(object):
     
         # KSTL and KSUS have location "St Louis, MO" but USNO wants
         # Saint abbreviated with the dot, i.e., "St."
-        st_no_dot = re.compile(r'^St(?!\.)\b')
+        st_no_dot = re.compile(r'^S[tT](?!\.)\b')
         location = st_no_dot.sub('St.', location)
         return location
 
@@ -94,7 +94,7 @@ class LoggingNight(object):
         """An error occured finding astronomical information"""
 
     def __init__(self, icao, date, zulu=None, offset=None, try_cache=False):
-        self.icao = icao.upper()
+        self.icao = icao.strip().upper()
         self.date = date
         self.zulu = zulu
         self.offset = offset
@@ -113,17 +113,17 @@ class LoggingNight(object):
         elif self.offset is not None:
             self.tz = str(self.offset)
 
-        self.airport = self.web_query(self.AIRPORTINFO_URL, params={'icao': self.icao})
+        self.airport = self.web_query(self.AIRPORTINFO_URL, params={'airport': self.icao, 'include': ['demographic', 'geographic']})
 
         if not self.airport['query_stats']['status_code'] in {200, 304}:
             raise self.LocationException('Received the following error looking up the airport: %d %s' % \
                 (self.airport['query_stats']['status_code'], self.airport['query_stats']['status_text']))
 
-        if not 'response' in self.airport or not 'location' in self.airport['response'] \
-        or not self.airport['response']['location']:
+        if not 'response' in self.airport or not 'city' in self.airport['response'] \
+        or not self.airport['response']['city']:
             raise self.LocationException('Unable to find location information for %s.  Make sure you\'re using an ICAO identifier (for example, KDPA not DPA)' % self.icao)
 
-        self.location = self.fix_location(self.airport['response']['location'])
+        self.location = self.fix_location(self.airport['response']['city'] + ", " + self.airport['response']['state_code'])
 
         self.usno = {}
         self.in_zulu = False
@@ -135,7 +135,9 @@ class LoggingNight(object):
         if not 'response' in self.usno or not 'sundata' in self.usno['response']:
             # The USNO hasn't recognized our location, probably.  Try again with lat+long.
             # Lookups with lat+long require a timezone
-            self.location = self.airport['response']['latitude'] + ',' + self.airport['response']['longitude']
+            lat_degs = str(float(self.airport['response']['latitude_secs'][0:-1])/3600) + self.airport['response']['latitude_secs'][-1]
+            long_degs = str(float(self.airport['response']['longitude_secs'][0:-1])/3600) + self.airport['response']['longitude_secs'][-1]
+            self.location = lat_degs + ',' + long_degs
             self.offset = self.tz if self.tz is not None else '0'
 
             self.usno = self.web_query(self.USNO_URL, params={'coords': self.location, 'date': self.date.strftime('%m/%d/%Y'), 'tz': self.offset})
