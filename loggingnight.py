@@ -18,7 +18,7 @@ def makedate(datestring):
 class LoggingNight(object):
     """Provide an ICAO code and a date and get what the FAA considers night"""
 
-    AIRPORTINFO_URL = 'https://api.aeronautical.info/airport/dev/'
+    AIRPORTINFO_URL = 'https://api.aeronautical.info/dev/'
     USNO_URL = 'http://api.usno.navy.mil/rstt/oneday'
     ONE_HOUR = datetime.timedelta(hours=1)
 
