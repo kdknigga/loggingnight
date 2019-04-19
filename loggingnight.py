@@ -178,7 +178,7 @@ if __name__ == "__main__":
     parser.add_argument("-a", "--airport", help="ICAO code for the airport", required=True)
     parser.add_argument("-d", "--date", type=makedate,
                         default=datetime.date.today().isoformat(), help="Date of the flight")
-    parser.add_argument("-D", "--debug", action='count')
+    parser.add_argument("-D", "--debug", action='count', default=0)
     parser.add_argument("-o", "--offset", type=float, help="Time zone offset in hours from Zulu, -12.0 to +14.0")
     parser.add_argument("-z", "--zulu", action='store_true', help="Show times in Zulu")
     parser.add_argument("-c", "--cache", action='store_true', help="Attempt to use cache to reduce remote API calls")
