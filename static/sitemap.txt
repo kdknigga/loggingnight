@@ -101,6 +101,7 @@ http://loggingnight.org/?airport=MCI
 http://loggingnight.org/?airport=DPA
 http://loggingnight.org/?airport=ARR
 http://loggingnight.org/?airport=OKK
+http://loggingnight.org/?airport=OSH
 http://loggingnight.org/?airport=LL10
 http://loggingnight.org/?airport=8I3
 http://loggingnight.org/?airport=KVNY
@@ -203,4 +204,5 @@ http://loggingnight.org/?airport=KMCI
 http://loggingnight.org/?airport=KDPA
 http://loggingnight.org/?airport=KARR
 http://loggingnight.org/?airport=KOKK
+http://loggingnight.org/?airport=KOSH
 http://loggingnight.org/?airport=KOKK&date=1983-08-23
