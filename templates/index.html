@@ -121,12 +121,12 @@
 <p id="error_display">{% if result['error'] %}There is an error: {{ result['error'] }}{% endif %}</p>
 <form id="inp">
 {% if result %}
-<p style="font-size: 20px">ICAO code</p>
+<p style="font-size: 20px">Airport code</p>
 <p><input type="text" name="airport" id="airport" value="{{ result['airport'].upper() }}"></p>
 <p style="font-size: 20px">Date</p>
 <p><input type="text" name="date" id="date" value="{{ result['date'] }}" autocomplete="off"></p>
 {% else %}
-<p style="font-size: 20px">ICAO code</p>
+<p style="font-size: 20px">Airport code</p>
 <p><input type="text" name="airport" id="airport"></p>
 <p style="font-size: 20px">Date</p>
 <p><input type="text" name="date" id="date" autocomplete="off"></p>
