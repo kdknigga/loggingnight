@@ -75,7 +75,7 @@ def do_lookup(icao_identifier, date):
             end_civil=ln.end_civil_twilight.strftime(time_format),
             one_hour=ln.hour_after_sunset.strftime(time_format),
             airport_debug=pprint.pformat(ln.airport, indent=4),
-            usno_debug=pprint.pformat(ln.usno, indent=4)
+            #usno_debug=pprint.pformat(ln.usno, indent=4)
             )
     else:
         result = dict(
