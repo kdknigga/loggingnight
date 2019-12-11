@@ -1,6 +1,5 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
-from __future__ import print_function
 import datetime
 import re
 import requests
@@ -15,11 +14,144 @@ except ImportError:
 def makedate(datestring):
     return dateparser.parse(datestring).date()
 
+def total_seconds(td):
+    if hasattr(td, 'total_seconds'):
+        return td.total_seconds()
+    else:
+        # timedelta has no total_seconds method in Python 2.6
+        sec = td.seconds + td.days * 24 * 60 * 60
+        return (float(td.microseconds) / 10**6) + sec
+
+def web_query(url, params=None, headers=None, verify_ssl=False):
+    params = params or {}
+    headers = headers or {}
+    stats = {}
+
+    r = requests.get(url, headers=headers, params=params, timeout=10, verify=verify_ssl)
+    stats['final_url'] = r.url
+    stats['query_time'] = total_seconds(r.elapsed)
+    stats['status_code'] = r.status_code
+    stats['status_text'] = r.reason
+    stats['headers'] = r.headers
+    if hasattr(r, 'from_cache'):
+        stats['from_cache'] = r.from_cache
+
+    try:
+        return {'query_stats': stats, 'response': r.json()}
+    except:
+        return {'query_stats': stats}
+
+class StarfieldProvider(object):
+    """ Use Starfield to calculate astronomical information"""
+
+    from skyfield import api
+    from skyfield import almanac
+    from timezonefinder import TimezoneFinder
+    import pytz
+
+    @staticmethod
+    def nearest_minute(dt):
+        return (dt + datetime.timedelta(seconds=30)).replace(second=0, microsecond=0)
+
+    def __init__(self, airport=None, date=None, tz=None):
+        self.airport = airport
+        self.date = date
+
+    def lookup(self):
+        ts = self.api.load.timescale()
+        e = self.api.load('de421.bsp')
+        tf = self.TimezoneFinder()
+
+        lat_degs = str(float(self.airport['response']['latitude_secs'][0:-1])/3600) + self.airport['response']['latitude_secs'][-1]
+        long_degs = str(float(self.airport['response']['longitude_secs'][0:-1])/3600) + self.airport['response']['longitude_secs'][-1]
+
+        location = self.api.Topos(lat_degs, long_degs)
+
+        tzstring = tf.timezone_at(lng=location.longitude.degrees, lat=location.latitude.degrees)
+
+        if not tzstring:
+            tz = self.pytz.utc
+            in_zulu = True
+        else:
+            tz = self.pytz.timezone(tzstring)
+            in_zulu = False
+
+        t0 = ts.utc(tz.localize(datetime.datetime.combine(self.date, datetime.time(hour=0, minute=0))))
+        t1 = ts.utc(tz.localize(datetime.datetime.combine(self.date, datetime.time(hour=23, minute=59))))
+
+        t, _ = self.almanac.find_discrete(t0, t1, self.almanac.dark_twilight_day(e, location))
+
+        start_civil_twilight = self.nearest_minute(t[2].utc_datetime()).astimezone(tz)
+        sunrise = self.nearest_minute(t[3].utc_datetime()).astimezone(tz)
+        sunset = self.nearest_minute(t[4].utc_datetime()).astimezone(tz)
+        end_civil_twilight = self.nearest_minute(t[5].utc_datetime()).astimezone(tz)
+
+        return {'sun_set': sunset, 'end_civil_twilight': end_civil_twilight, 'in_zulu': in_zulu}
+
+class USNOProvider(object):
+    """Use the USNO API server for astronomical information"""
+
+    USNO_URL = 'http://api.usno.navy.mil/rstt/oneday'
+
+    class AstronomicalException(IOError):
+        """An error occured finding astronomical information"""
+
+    @staticmethod
+    def fix_location(location):
+        # The split on / is required for airport like KDPA where
+        # the location is "Chicago / west Chicago, IL"
+        location = location.split('/')[-1]
+
+        # KSTL and KSUS have location "St Louis, MO" but USNO wants
+        # Saint abbreviated with the dot, i.e., "St."
+        st_no_dot = re.compile(r'^S[tT](?!\.)\b')
+        location = st_no_dot.sub('St.', location)
+        return location
+
+    def __init__(self, airport=None, date=None, tz=None):
+        self.airport = airport
+        self.date = date
+        self.tz = tz
+        self.usno = {}
+        in_zulu = False
+
+        self.location = self.fix_location(self.airport['response']['city'] + ", " + self.airport['response']['state_code'])
+
+    def lookup(self):
+        if self.tz is None:
+            self.usno = web_query(self.USNO_URL, params={'loc': self.location, 'date': self.date.strftime('%m/%d/%Y')})
+            in_zulu = False
+
+        if not 'response' in self.usno or not 'sundata' in self.usno['response']:
+            # The USNO hasn't recognized our location, probably.  Try again with lat+long.
+            # Lookups with lat+long require a timezone
+            lat_degs = str(float(self.airport['response']['latitude_secs'][0:-1])/3600) + self.airport['response']['latitude_secs'][-1]
+            long_degs = str(float(self.airport['response']['longitude_secs'][0:-1])/3600) + self.airport['response']['longitude_secs'][-1]
+            self.location = lat_degs + ',' + long_degs
+            self.offset = self.tz if self.tz is not None else '0'
+
+            self.usno = self.web_query(self.USNO_URL, params={'coords': self.location, 'date': self.date.strftime('%m/%d/%Y'), 'tz': self.offset})
+
+            in_zulu = float(self.offset) == 0
+
+        if not self.usno['query_stats']['status_code'] in {200, 304}:
+            raise self.AstronomicalException('The USNO seems to be having problems: %d %s' % \
+                (self.usno['query_stats']['status_code'], self.usno['query_stats']['status_text']))
+
+        if not 'response' in self.usno or not 'sundata' in self.usno['response']:
+            raise self.AstronomicalException('Unable to find sun data for %s' % self.location)
+
+        phenTimes = dict((i['phen'], i['time']) for i in self.usno['response']['sundata'])
+        sun_set = dateparser.parse(phenTimes['S'])
+        end_civil_twilight = dateparser.parse(phenTimes['EC'])
+
+        return {'sun_set': sun_set, 'end_civil_twilight': end_civil_twilight, 'in_zulu': in_zulu}
+
+
 class LoggingNight(object):
     """Provide an ICAO code and a date and get what the FAA considers night"""
 
     AIRPORTINFO_URL = 'https://api.aeronautical.info/dev/'
-    USNO_URL = 'http://api.usno.navy.mil/rstt/oneday'
     ONE_HOUR = datetime.timedelta(hours=1)
 
     @staticmethod
@@ -46,52 +178,8 @@ class LoggingNight(object):
                 response, timestamp = cache.responses[key]
                 yield (timestamp, response.url)
 
-    @staticmethod
-    def total_seconds(td):
-        if hasattr(td, 'total_seconds'):
-            return td.total_seconds()
-        else:
-            # timedelta has no total_seconds method in Python 2.6
-            sec = td.seconds + td.days * 24 * 60 * 60
-            return (float(td.microseconds) / 10**6) + sec
-
-    @staticmethod
-    def fix_location(location):
-        # The split on / is required for airport like KDPA where
-        # the location is "Chicago / west Chicago, IL"
-        location = location.split('/')[-1]
-    
-        # KSTL and KSUS have location "St Louis, MO" but USNO wants
-        # Saint abbreviated with the dot, i.e., "St."
-        st_no_dot = re.compile(r'^S[tT](?!\.)\b')
-        location = st_no_dot.sub('St.', location)
-        return location
-
-    def web_query(self, url, params=None, headers=None):
-        params = params or {}
-        headers = headers or {}
-        stats = {}
-
-        r = requests.get(url, headers=headers, params=params, timeout=10, verify=False)
-        stats['final_url'] = r.url
-        stats['query_time'] = self.total_seconds(r.elapsed)
-        stats['status_code'] = r.status_code
-        stats['status_text'] = r.reason
-        stats['headers'] = r.headers
-        if hasattr(r, 'from_cache'):
-            stats['from_cache'] = r.from_cache
-
-        try:
-            return {'query_stats': stats, 'response': r.json()}
-        except:
-            return {'query_stats': stats}
-
-
     class LocationException(IOError):
         """An error occured finding airport location information"""
-
-    class AstronomicalException(IOError):
-        """An error occured finding astronomical information"""
 
     def __init__(self, icao, date, zulu=None, offset=None, try_cache=False):
         self.icao = icao.strip().upper()
@@ -113,7 +201,7 @@ class LoggingNight(object):
         elif self.offset is not None:
             self.tz = str(self.offset)
 
-        self.airport = self.web_query(self.AIRPORTINFO_URL, params={'airport': self.icao, 'include': ['demographic', 'geographic']})
+        self.airport = web_query(self.AIRPORTINFO_URL, params={'airport': self.icao, 'include': ['demographic', 'geographic']}, verify_ssl=True)
 
         if not self.airport['query_stats']['status_code'] in {200, 304}:
             raise self.LocationException('Received the following error looking up the airport: %d %s' % \
@@ -123,40 +211,16 @@ class LoggingNight(object):
         or not self.airport['response']['city']:
             raise self.LocationException('Unable to find location information for %s.  Make sure you\'re using an ICAO identifier (for example, KDPA not DPA)' % self.icao)
 
-        self.location = self.fix_location(self.airport['response']['city'] + ", " + self.airport['response']['state_code'])
-
-        self.usno = {}
-        self.in_zulu = False
-
-        if self.tz is None:
-            self.usno = self.web_query(self.USNO_URL, params={'loc': self.location, 'date': self.date.strftime('%m/%d/%Y')})
-            self.in_zulu = False
-
-        if not 'response' in self.usno or not 'sundata' in self.usno['response']:
-            # The USNO hasn't recognized our location, probably.  Try again with lat+long.
-            # Lookups with lat+long require a timezone
-            lat_degs = str(float(self.airport['response']['latitude_secs'][0:-1])/3600) + self.airport['response']['latitude_secs'][-1]
-            long_degs = str(float(self.airport['response']['longitude_secs'][0:-1])/3600) + self.airport['response']['longitude_secs'][-1]
-            self.location = lat_degs + ',' + long_degs
-            self.offset = self.tz if self.tz is not None else '0'
-
-            self.usno = self.web_query(self.USNO_URL, params={'coords': self.location, 'date': self.date.strftime('%m/%d/%Y'), 'tz': self.offset})
-
-            self.in_zulu = float(self.offset) == 0
-
-        if not self.usno['query_stats']['status_code'] in {200, 304}:
-            raise self.AstronomicalException('The USNO seems to be having problems: %d %s' % \
-                (self.usno['query_stats']['status_code'], self.usno['query_stats']['status_text']))
-
-        if not 'response' in self.usno or not 'sundata' in self.usno['response']:
-            raise self.AstronomicalException('Unable to find sun data for %s' % self.location)
-
-        self.phenTimes = dict((i['phen'], i['time']) for i in self.usno['response']['sundata'])
+        # Look up astronomical data here
+        #astro_provider = USNOProvider(self.airport, self.date, self.tz)
+        astro_provider = StarfieldProvider(self.airport, self.date, self.tz)
+        times = astro_provider.lookup()
 
         self.name = self.airport['response']['name']
-        self.sun_set = dateparser.parse(self.phenTimes['S'])
-        self.end_civil_twilight = dateparser.parse(self.phenTimes['EC'])
+        self.sun_set = times['sun_set']
+        self.end_civil_twilight = times['end_civil_twilight']
         self.hour_after_sunset = self.sun_set + self.ONE_HOUR
+        self.in_zulu = times['in_zulu']
 
 if __name__ == "__main__":
     import argparse
@@ -189,8 +253,8 @@ if __name__ == "__main__":
     debug_print("Airport debug info:", level=2)
     debug_print(pprint.pformat(ln.airport, indent=4), level=2)
     debug_print("", level=2)
-    debug_print("US Naval Observatory debug info:", level=2)
-    debug_print(pprint.pformat(ln.usno, indent=4), level=2)
+    #debug_print("US Naval Observatory debug info:", level=2)
+    #debug_print(pprint.pformat(ln.usno, indent=4), level=2)
 
     print("Night times for %s on %s" % (ln.name, ln.date.isoformat()))
     if ln.in_zulu and ln.tz is None:
