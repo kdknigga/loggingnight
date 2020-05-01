@@ -86,7 +86,7 @@ class StarfieldProvider(object):
         sunset = self.nearest_minute(t[4].utc_datetime()).astimezone(tz)
         end_civil_twilight = self.nearest_minute(t[5].utc_datetime()).astimezone(tz)
 
-        return {'sun_set': sunset, 'end_civil_twilight': end_civil_twilight, 'in_zulu': in_zulu}
+        return {'sun_rise': sunrise, 'sun_set': sunset, 'start_civil_twilight': start_civil_twilight, 'end_civil_twilight': end_civil_twilight, 'in_zulu': in_zulu}
 
 class USNOProvider(object):
     """Use the USNO API server for astronomical information"""
@@ -217,8 +217,12 @@ class LoggingNight(object):
         times = astro_provider.lookup()
 
         self.name = self.airport['response']['name']
+        self.city_st = self.airport['response']['city'] + ", " + self.airport['response']['state_code']
+        self.sun_rise = times['sun_rise']
         self.sun_set = times['sun_set']
+        self.start_civil_twilight = times['start_civil_twilight']
         self.end_civil_twilight = times['end_civil_twilight']
+        self.hour_before_sunrise = self.sun_rise - self.ONE_HOUR
         self.hour_after_sunset = self.sun_set + self.ONE_HOUR
         self.in_zulu = times['in_zulu']
 

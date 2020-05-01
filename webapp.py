@@ -11,7 +11,7 @@ from dateutil import parser as dateparser
 from flask import Flask, render_template, request, Response
 from loggingnight import LoggingNight
 
-application = Flask('__name__')
+application = Flask('__name__', static_url_path='/assets', static_folder='templates/assets')
 
 dev_mode = os.environ.get('LOGGINGNIGHT_DEV', 'false')
 if dev_mode == "true":
@@ -70,10 +70,14 @@ def do_lookup(icao_identifier, date):
         result = dict(
             airport=icao_identifier,
             name=ln.name,
+            city=ln.city_st,
             date=date.isoformat(),
+            sunrise=ln.sun_rise.strftime(time_format),
             sunset=ln.sun_set.strftime(time_format),
+            start_civil=ln.start_civil_twilight.strftime(time_format),
             end_civil=ln.end_civil_twilight.strftime(time_format),
-            one_hour=ln.hour_after_sunset.strftime(time_format),
+            hour_before=ln.hour_before_sunrise.strftime(time_format),
+            hour_after=ln.hour_after_sunset.strftime(time_format),
             airport_debug=pprint.pformat(ln.airport, indent=4),
             #usno_debug=pprint.pformat(ln.usno, indent=4)
             )
@@ -81,10 +85,14 @@ def do_lookup(icao_identifier, date):
         result = dict(
             airport=icao_identifier,
             name=ln.name,
+            city=ln.city_st,
             date=date.isoformat(),
+            sunrise=ln.sun_rise.strftime(time_format),
             sunset=ln.sun_set.strftime(time_format),
+            start_civil=ln.start_civil_twilight.strftime(time_format),
             end_civil=ln.end_civil_twilight.strftime(time_format),
-            one_hour=ln.hour_after_sunset.strftime(time_format)
+            hour_before=ln.hour_before_sunrise.strftime(time_format),
+            hour_after=ln.hour_after_sunset.strftime(time_format),
             )
 
     return result
