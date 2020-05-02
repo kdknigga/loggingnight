@@ -106,8 +106,8 @@
                 <p style="font-size: 20px;margin-right: 16px;margin-left: 16px;">Plug in your airport ID, and optionally a date, below and we'll tell you what the Federal Aviation Regulations say about what you need to fly and what you can log.</p>
                 <form class="text-center d-inline-flex flex-column justify-content-center align-items-center align-content-center align-self-center flex-wrap"
                     id="inp" style="margin-top: 32px;"><label for="airport">FAA or ICAO Airport ID</label><input class="form-control form-control-lg" type="text" id="airport" minlength="3" maxlength="4" required="" name="airport" placeholder="KORD" style="max-width: 560px; text-align: center;"
-                        autofocus="" value="{% if result %}{{ result['airport'].upper() }}{% endif %}"><label for="date">Date</label><input class="form-control form-control-lg datetimepicker" type="text" id="date" name="date" style="max-width: 560px; text-align: center;"
-                        value="{% if result %}{{ result['date'] }}{% endif %}" autocomplete="off"><button class="btn btn-primary btn-lg" id="submit_btn" type="submit" style="margin-top: 32px;">Get Night</button></form>
+                        autofocus="" value="{% if result %}{{ result['airport'].upper() }}{% endif %}" tabindex="1"><label for="date">Date</label><input class="form-control form-control-lg datetimepicker" type="text" id="date" name="date" style="max-width: 560px; text-align: center;"
+                        value="{% if result %}{{ result['date'] }}{% endif %}" autocomplete="off" tabindex="2"><button class="btn btn-primary btn-lg" id="submit_btn" type="submit" style="margin-top: 32px;" tabindex="3">Get Night</button></form>
         </div>
         <div class="bg-circle-1 bg-circle"></div>
         <div class="bg-circle-2 bg-circle"></div>
