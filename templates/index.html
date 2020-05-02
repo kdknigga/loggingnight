@@ -17,7 +17,7 @@
     if (event.target.readyState === 'complete') {
       $( function() {
         var $has_results = "{{ result != None }}".toLowerCase();
-{% if results and results['error'] %}
+{% if result and result['error'] %}
         var $has_error = true;
 {% else %}
         var $has_error = false;
@@ -25,6 +25,7 @@
 
         $("#date").datetimepicker()
         $("#date").data("DateTimePicker").format("YYYY-MM-DD");
+        $("#date").data("DateTimePicker").widgetPositioning({horizontal: 'auto', vertical: 'top'});
         if ($has_results == "true"){$("#date").data("DateTimePicker").date("{{ result['date'] }}")};
 
         $("#inp").submit(function(event) {
@@ -39,11 +40,12 @@
           $.post('/lookup', $.param($('#inp input')), function(data) {
             if (data.error) {
 
-              $('#error_title').text("There has been an error: ");
-              $('#error_text').append(data.responseText);
+              $('#error_output').text("There has been an error: ");
+              $('#error_output').append(data.responseText);
+              $('#error_output').show();
             } else {
-              $('#error_title').text("");
-              $('#error_text').text("");
+              $('#error_output').hide();
+              $('#error_output').text("");
               $('#out_airport_name').text(data.name);
               $('#out_city_name').text(data.city);
               $('#out_date').text(data.date);
@@ -54,6 +56,9 @@
               $('#out_hour_before_sunrise').text(data.hour_before);
               $('#out_hour_after_sunset').text(data.hour_after);
               $('#output').show();
+              $('html, body').animate({
+                scrollTop: ($('#output').offset().top)
+              },500);
 
               if ("{{ dev_mode }}" == "true")
               {
@@ -65,8 +70,9 @@
             }
           }, 'json')
             .fail(function(data) { 
-              $('#error_title').text("An error has occurred: ");
-              $('#error_text').append(data.responseText);
+              $('#error_output').text("An error has occurred: ");
+              $('#error_output').append(data.responseText);
+              $('#error_output').show()
               $('#output').hide(); 
             })
             .always(function() {
@@ -77,8 +83,8 @@
 
         if ($has_error == false)
         {
-            $('#error_title').text("");
-            $('#error_text').text("");
+            $('#error_output').hide();
+            $('#error_output').text("");
         }
         if ($has_results == "true")
         {
@@ -92,23 +98,16 @@
 </script>
     <header class="masthead text-center text-white" style="padding-top: 50px;">
         <div class="masthead-content">
-            <div class="toast text-danger align-self-stretch mx-auto hide" role="alert" data-fade="false" data-autohide="false" data-delay="" style="width: 80%;max-width: 80%;">
-                <div class="toast-header"><strong class="mr-auto" id="error_title">There is an error:</strong></div>
-                <div class="toast-body" role="alert">
-                    <p id="error_text">{% if result['error'] %}{{ result['error'] }}{% endif %}</p>
-                </div>
-            </div>{% if dev_mode == "true" %}
-            <p class="text-warning d-none d-md-block" id="dev_site_warning" style="font-size: 20px;margin-right: 16px;margin-left: 16px;background-color: rgba(255,255,255,1);"><strong>Warning: This is the dev website. Production can be found at&nbsp;</strong><a href="https://loggingnight.org/"><strong>https://loggingnight.org/</strong></a><br></p>{% endif %}
-            <p class="text-info d-none d-md-block" id="usno_down_info"
-                style="font-size: 20px;margin-right: 16px;margin-left: 16px;background-color: rgba(255,255,255,1);"><strong>We are currently calculating our own astronomical data while </strong><a href="https://www.usno.navy.mil/USNO/astronomical-applications"><strong>the USNO is out of service</strong></a><strong>. Please sanity check the times you get and report problems on </strong>
-                <a
-                    href="https://github.com/kdknigga/loggingnight/issues"><strong>our GitHub page</strong></a><strong>.</strong><br></p>
-            <p class="d-none d-md-block" style="font-size: 20px;margin-right: 16px;margin-left: 16px;">Trouble keeping your sunsets straight from your civil twilights? Can't remember when your TOMATOFLAMES require FLAPS? Find USNO astronomical tables confusing? We've got your back.<br></p>
-            <p style="font-size: 20px;margin-right: 16px;margin-left: 16px;">Plug in your airport ID, and optionally a date, below and we'll tell you what the Federal Aviation Regulations say about what you need to fly and what you can log.</p>
-            <form class="text-center d-inline-flex flex-column justify-content-center align-items-center align-content-center align-self-center flex-wrap"
-                style="margin-top: 32px;margin-bottom: 70px;"><label for="airport">FAA or ICAO Airport ID</label><input class="form-control form-control-lg" type="text" minlength="3" maxlength="4" required="" name="airport" placeholder="KORD" style="max-width: 560px; text-align: center;" autofocus=""
-                    value="{% if result %}{{ result['airport'].upper() }}{% endif %}"><label for="date">Date</label><input class="form-control form-control-lg datetimepicker" type="text" id="date" name="date" style="max-width: 560px; text-align: center;"
-                    value="{% if result %}{{ result['date'] }}{% endif %}"><button class="btn btn-primary btn-lg" id="submit_btn" type="submit" style="margin-top: 32px;">Get Night</button></form>
+            <p class="text-warning border-warning d-none text-uppercase font-weight-bolder" id="error_output" style="font-size: 20px;margin-right: 16px;margin-left: 16px;background-color: rgba(255,255,255,1);"><br></p>{% if dev_mode == "true" %}
+            <p class="text-warning d-md-block font-weight-bold" id="dev_site_warning-1" style="font-size: 20px;margin-right: 16px;margin-left: 16px;background-color: rgba(255,255,255,1);">Warning: This is the dev website. Production can be found at&nbsp;<a href="https://loggingnight.org/">https://loggingnight.org/</a><br></p>{% endif %}
+            <p class="text-info d-md-block font-weight-bold" id="usno_down_info" style="font-size: 20px;margin-right: 16px;margin-left: 16px;background-color: rgba(255,255,255,1);">We are currently calculating our own astronomical data while <a href="https://www.usno.navy.mil/USNO/astronomical-applications">the USNO is out of service</a>. Please sanity check the times you get and report problems on <a href="https://github.com/kdknigga/loggingnight/issues">our GitHub page</a>.<br></p>
+            <p
+                class="d-none d-md-block" style="font-size: 20px;margin-right: 16px;margin-left: 16px;">Trouble keeping your sunsets straight from your civil twilights? Can't remember when your TOMATOFLAMES require FLAPS? Find USNO astronomical tables confusing? We've got your back.<br></p>
+                <p style="font-size: 20px;margin-right: 16px;margin-left: 16px;">Plug in your airport ID, and optionally a date, below and we'll tell you what the Federal Aviation Regulations say about what you need to fly and what you can log.</p>
+                <form class="text-center d-inline-flex flex-column justify-content-center align-items-center align-content-center align-self-center flex-wrap"
+                    id="inp" style="margin-top: 32px;"><label for="airport">FAA or ICAO Airport ID</label><input class="form-control form-control-lg" type="text" id="airport" minlength="3" maxlength="4" required="" name="airport" placeholder="KORD" style="max-width: 560px; text-align: center;"
+                        autofocus="" value="{% if result %}{{ result['airport'].upper() }}{% endif %}"><label for="date">Date</label><input class="form-control form-control-lg datetimepicker" type="text" id="date" name="date" style="max-width: 560px; text-align: center;"
+                        value="{% if result %}{{ result['date'] }}{% endif %}"><button class="btn btn-primary btn-lg" id="submit_btn" type="submit" style="margin-top: 32px;">Get Night</button></form>
         </div>
         <div class="bg-circle-1 bg-circle"></div>
         <div class="bg-circle-2 bg-circle"></div>
