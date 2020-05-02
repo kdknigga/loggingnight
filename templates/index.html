@@ -98,7 +98,7 @@
 </script>
     <header class="masthead text-center text-white" style="padding-top: 50px;">
         <div class="masthead-content">
-            <p class="text-warning border-warning d-none text-uppercase font-weight-bolder" id="error_output" style="font-size: 20px;margin-right: 16px;margin-left: 16px;background-color: rgba(255,255,255,1);"><br></p>{% if dev_mode == "true" %}
+            <p class="text-warning border-warning text-uppercase font-weight-bolder {% if not result['error'] %}d-none{% endif %}" id="error_output" style="font-size: 20px;margin-right: 16px;margin-left: 16px;background-color: rgba(255,255,255,1);"><strong>{% if result['error'] %}There is an error: {{ result['error'] }}{% endif %}</strong><br></p>{% if dev_mode == "true" %}
             <p class="text-warning d-md-block font-weight-bold" id="dev_site_warning-1" style="font-size: 20px;margin-right: 16px;margin-left: 16px;background-color: rgba(255,255,255,1);">Warning: This is the dev website. Production can be found at&nbsp;<a href="https://loggingnight.org/">https://loggingnight.org/</a><br></p>{% endif %}
             <p class="text-info d-md-block font-weight-bold" id="usno_down_info" style="font-size: 20px;margin-right: 16px;margin-left: 16px;background-color: rgba(255,255,255,1);">We are currently calculating our own astronomical data while <a href="https://www.usno.navy.mil/USNO/astronomical-applications">the USNO is out of service</a>. Please sanity check the times you get and report problems on <a href="https://github.com/kdknigga/loggingnight/issues">our GitHub page</a>.<br></p>
             <p
@@ -107,14 +107,14 @@
                 <form class="text-center d-inline-flex flex-column justify-content-center align-items-center align-content-center align-self-center flex-wrap"
                     id="inp" style="margin-top: 32px;"><label for="airport">FAA or ICAO Airport ID</label><input class="form-control form-control-lg" type="text" id="airport" minlength="3" maxlength="4" required="" name="airport" placeholder="KORD" style="max-width: 560px; text-align: center;"
                         autofocus="" value="{% if result %}{{ result['airport'].upper() }}{% endif %}"><label for="date">Date</label><input class="form-control form-control-lg datetimepicker" type="text" id="date" name="date" style="max-width: 560px; text-align: center;"
-                        value="{% if result %}{{ result['date'] }}{% endif %}"><button class="btn btn-primary btn-lg" id="submit_btn" type="submit" style="margin-top: 32px;">Get Night</button></form>
+                        value="{% if result %}{{ result['date'] }}{% endif %}" autocomplete="off"><button class="btn btn-primary btn-lg" id="submit_btn" type="submit" style="margin-top: 32px;">Get Night</button></form>
         </div>
         <div class="bg-circle-1 bg-circle"></div>
         <div class="bg-circle-2 bg-circle"></div>
         <div class="bg-circle-3 bg-circle"></div>
         <div class="bg-circle-4 bg-circle"></div>
     </header>
-    <section id="output">
+    <section id="output" style="{% if not result or result['error'] %}display: none;{% endif %}">
         <div class="container">
             <div class="card">
                 <div class="card-body">
@@ -164,8 +164,8 @@
                             </tbody>
                         </table>
                     </div>
-                    <p class="text-center card-text">Logging of night time can start and aircraft must be night equipped.<br>(<a href="https://www.law.cornell.edu/cfr/text/14/61.51">14 CFR 61.51(b)(3)(i)</a>, <a href="https://www.law.cornell.edu/cfr/text/14/91.205">14 CFR 91.205(c)</a>,
-                        and <a href="https://www.law.cornell.edu/cfr/text/14/1.1">14 CFR 1.1</a>)<br></p>
+                    <p class="text-center card-text">Night time can be logged and aircraft must be night equipped.<br>(<a href="https://www.law.cornell.edu/cfr/text/14/61.51">14 CFR 61.51(b)(3)(i)</a>, <a href="https://www.law.cornell.edu/cfr/text/14/91.205">14 CFR 91.205(c)</a>, and
+                        <a href="https://www.law.cornell.edu/cfr/text/14/1.1">14 CFR 1.1</a>)<br></p>
                 </div>
             </div>
             <div class="card">
