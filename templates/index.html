@@ -39,7 +39,6 @@
           };
           $.post('/lookup', $.param($('#inp input')), function(data) {
             if (data.error) {
-
               $('#error_output').text("There has been an error: ");
               $('#error_output').append(data.responseText);
               $('#error_output').show();
@@ -98,8 +97,8 @@
 </script>
     <header class="masthead text-center text-white" style="padding-top: 50px;">
         <div class="masthead-content">
-            <p class="text-warning border-warning text-uppercase font-weight-bolder {% if not result['error'] %}d-none{% endif %}" id="error_output" style="font-size: 20px;margin-right: 16px;margin-left: 16px;background-color: rgba(255,255,255,1);"><strong>{% if result['error'] %}There is an error: {{ result['error'] }}{% endif %}</strong><br></p>{% if dev_mode == "true" %}
-            <p class="text-warning d-md-block font-weight-bold" id="dev_site_warning-1" style="font-size: 20px;margin-right: 16px;margin-left: 16px;background-color: rgba(255,255,255,1);">Warning: This is the dev website. Production can be found at&nbsp;<a href="https://loggingnight.org/">https://loggingnight.org/</a><br></p>{% endif %}
+            <p class="text-warning border-warning text-uppercase font-weight-bolder" id="error_output" style="font-size: 20px;margin-right: 16px;margin-left: 16px;background-color: rgba(255,255,255,1); {% if not result['error'] %}display: none;{% endif %}">{% if result['error'] %}There is an error: {{ result['error'] }}{% endif %}<br></p>{% if dev_mode == "true" %}
+            <p class="text-warning d-md-block font-weight-bold" id="dev_site_warning" style="font-size: 20px;margin-right: 16px;margin-left: 16px;background-color: rgba(255,255,255,1);">Warning: This is the dev website. Production can be found at&nbsp;<a href="https://loggingnight.org/">https://loggingnight.org/</a><br></p>{% endif %}
             <p class="text-info d-md-block font-weight-bold" id="usno_down_info" style="font-size: 20px;margin-right: 16px;margin-left: 16px;background-color: rgba(255,255,255,1);">We are currently calculating our own astronomical data while <a href="https://www.usno.navy.mil/USNO/astronomical-applications">the USNO is out of service</a>. Please sanity check the times you get and report problems on <a href="https://github.com/kdknigga/loggingnight/issues">our GitHub page</a>.<br></p>
             <p
                 class="d-none d-md-block" style="font-size: 20px;margin-right: 16px;margin-left: 16px;">Trouble keeping your sunsets straight from your civil twilights? Can't remember when your TOMATOFLAMES require FLAPS? Find USNO astronomical tables confusing? We've got your back.<br></p>
