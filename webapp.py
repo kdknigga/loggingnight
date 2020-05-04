@@ -118,13 +118,33 @@ def lookup():
 
     return json.dumps(result)
 
-@application.route('/displayCache', methods=['GET'])
+@application.route('/displayCache')
 def displayCache():
     if LoggingNight.enable_cache():
         return Response(json.dumps(list((str(timestamp), url) for timestamp, url in LoggingNight.get_cache_entries())), mimetype='application/json')
     else:
         return False
-        
+
+@application.route('/sitemap.txt')
+@application.route('/static/sitemap.txt')
+def sitemap():
+    base_url = "https://loggingnight.org/?airport="
+    icao_airports = ["VNY", "DVT", "APA", "PRC", "HIO", "FFZ", "IWA", "GFK", "LGB", "SEE", "MYF", "SFB", "SNA", "CHD", "FPR", "FRG", "TMB", \
+                     "PAO", "RVS", "VRB", "DAB", "PMP", "PVU", "SDL", "RHV", "CNO", "DTO", "BJC", "PDK", "FIN", "SGJ", "ORF", "CRQ", "DCU", \
+                     "SMO", "ISM", "LVK", "VGT", "EUL", "BFI", "BDN", "HPN", "FXE", "CRG", "CMA", "LAL", "AWO", "ORD", "ATL", "LAX", "DFW", \
+                     "DEN", "CLT", "LAS", "IAH", "JFK", "SFO", "SEA", "PHX", "EWR", "MIA", "DTW", "MSP", "LGA", "BOS", "PHL", "FLL", "MCO", \
+                     "DCA", "SLC", "HNL", "BWI", "IAD", "MDW", "PDX", "MEM", "SAN", "STL", "BNA", "TPA", "ANC", "HOU", "SJC", "OAK", "SDF", \
+                     "CVG", "AUS", "DAL", "RDU", "IND", "PIT", "DAB", "OGG", "SMF", "MSY", "SJU", "MCI", "DPA", "ARR", "OKK", "OSH"]
+
+    faa_airports = ["S50", "1R8", "52F", "LL10", "8I3"]
+
+    urls = [ "%s%s" % (base_url, airport) for airport in icao_airports ]
+    urls.extend([ "%sK%s" % (base_url, airport) for airport in icao_airports ])
+    urls.extend([ "%s%s" % (base_url, airport) for airport in faa_airports ])
+    urls.append("%sKOKK&date=1983-08-23" % base_url)
+
+    return ('\n'.join(urls), 200, {'Content-Type': 'text/plain'})
+
 if __name__ == '__main__':
     application.run()
         
