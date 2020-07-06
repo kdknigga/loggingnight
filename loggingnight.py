@@ -119,7 +119,7 @@ class USNOProvider(object):
 
     def lookup(self):
         if self.tz is None:
-            self.usno = web_query(self.USNO_URL, params={'id': 'lndo', 'loc': self.location, 'date': self.date.strftime('%m/%d/%Y')})
+            self.usno = web_query(self.USNO_URL, params={'ID': 'lndo', 'loc': self.location, 'date': self.date.strftime('%m/%d/%Y')})
             in_zulu = False
 
         if not 'response' in self.usno or not 'sundata' in self.usno['response']:
