@@ -119,7 +119,7 @@ class USNOProvider(object):
 
     def lookup(self):
         if self.tz is None:
-            self.usno = web_query(self.USNO_URL, params={'loc': self.location, 'date': self.date.strftime('%m/%d/%Y')})
+            self.usno = web_query(self.USNO_URL, params={'id': 'lndo', 'loc': self.location, 'date': self.date.strftime('%m/%d/%Y')})
             in_zulu = False
 
         if not 'response' in self.usno or not 'sundata' in self.usno['response']:
@@ -130,7 +130,7 @@ class USNOProvider(object):
             self.location = lat_degs + ',' + long_degs
             self.offset = self.tz if self.tz is not None else '0'
 
-            self.usno = self.web_query(self.USNO_URL, params={'coords': self.location, 'date': self.date.strftime('%m/%d/%Y'), 'tz': self.offset})
+            self.usno = self.web_query(self.USNO_URL, params={'id': 'lndo', 'coords': self.location, 'date': self.date.strftime('%m/%d/%Y'), 'tz': self.offset})
 
             in_zulu = float(self.offset) == 0
 
@@ -201,7 +201,7 @@ class LoggingNight(object):
         elif self.offset is not None:
             self.tz = str(self.offset)
 
-        self.airport = web_query(self.AIRPORTINFO_URL, params={'airport': self.icao, 'include': ['demographic', 'geographic']}, verify_ssl=True)
+        self.airport = web_query(self.AIRPORTINFO_URL, params={'appid': 'loggingnight', 'airport': self.icao, 'include': ['demographic', 'geographic']}, verify_ssl=True)
 
         if not self.airport['query_stats']['status_code'] in {200, 304}:
             raise self.LocationException('Received the following error looking up the airport: %d %s' % \
