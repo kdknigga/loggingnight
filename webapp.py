@@ -133,10 +133,10 @@ def sitemap():
                      "PAO", "RVS", "VRB", "DAB", "PMP", "PVU", "SDL", "RHV", "CNO", "DTO", "BJC", "PDK", "FIN", "SGJ", "ORF", "CRQ", "DCU", \
                      "SMO", "ISM", "LVK", "VGT", "EUL", "BFI", "BDN", "HPN", "FXE", "CRG", "CMA", "LAL", "AWO", "ORD", "ATL", "LAX", "DFW", \
                      "DEN", "CLT", "LAS", "IAH", "JFK", "SFO", "SEA", "PHX", "EWR", "MIA", "DTW", "MSP", "LGA", "BOS", "PHL", "FLL", "MCO", \
-                     "DCA", "SLC", "HNL", "BWI", "IAD", "MDW", "PDX", "MEM", "SAN", "STL", "BNA", "TPA", "ANC", "HOU", "SJC", "OAK", "SDF", \
-                     "CVG", "AUS", "DAL", "RDU", "IND", "PIT", "DAB", "OGG", "SMF", "MSY", "SJU", "MCI", "DPA", "ARR", "OKK", "OSH"]
+                     "DCA", "SLC", "BWI", "IAD", "MDW", "PDX", "MEM", "SAN", "STL", "BNA", "TPA", "HOU", "SJC", "OAK", "SDF", "CVG", "AUS", \
+                     "DAL", "RDU", "IND", "PIT", "DAB", "OGG", "SMF", "MSY", "SJU", "MCI", "DPA", "ARR", "OKK", "OSH"]
 
-    faa_airports = ["S50", "1R8", "52F", "LL10", "8I3"]
+    faa_airports = ["S50", "1R8", "52F", "LL10", "8I3", "ANC", "PANC", "HNL", "PHNL"]
 
     urls = [ "%s%s" % (base_url, airport) for airport in icao_airports ]
     urls.extend([ "%sK%s" % (base_url, airport) for airport in icao_airports ])
