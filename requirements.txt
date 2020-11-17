@@ -4,5 +4,5 @@ pytz==2019.3
 requests==2.22.0
 requests-cache==0.5.2
 schedule==0.6.0
-skyfield==1.15
+skyfield==1.32
 timezonefinder==4.1.0
