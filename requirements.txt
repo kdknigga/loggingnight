@@ -7,3 +7,4 @@ schedule==0.6.0
 skyfield==1.32
 timezonefinder==4.1.0
 Jinja2==2.11.2
+Markupsafe==1.1.1
