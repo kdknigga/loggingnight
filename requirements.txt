@@ -6,7 +6,7 @@ requests-cache==0.5.2
 schedule==0.6.0
 skyfield==1.32
 timezonefinder==4.1.0
-Jinja2==2.11.2
+Jinja2==2.11.3
 MarkupSafe==1.1.1
 itsdangerous==1.1.0
 Werkzeug==1.0.1
