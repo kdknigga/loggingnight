@@ -99,13 +99,14 @@ def do_lookup(icao_identifier, date):
 
 @application.route('/lookup', methods=['POST'])
 def lookup():
-    icao_identifier = request.form['airport']
+    icao_identifier = flask.escape(request.form['airport'])
+    datestring = flask.escape(request.form['date'])
 
-    if request.form['date']:
+    if datestring:
         try:
-            date = dateparser.parse(request.form['date']).date()
+            date = dateparser.parse(datestring).date()
         except ValueError:
-            return "Unable to understand date %s" % request.form['date'], 400
+            return "Unable to understand date %s" % datestring, 400
     else:
         date = datetime.date.today()
 
