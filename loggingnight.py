@@ -243,9 +243,8 @@ class LoggingNight(object):
     def get_cache_entries():
         if LoggingNight.enable_cache:
             cache = requests_cache.get_cache()
-            for key in cache.responses:
-                response, timestamp = cache.responses[key]
-                yield (timestamp, response.url)
+            for entry in cache.values():
+                yield (entry.expires.isoformat(), entry.url)
 
     class LocationException(IOError):
         """An error occured finding airport location information"""
