@@ -234,7 +234,7 @@ class LoggingNight(object):
     @staticmethod
     def garbage_collect_cache():
         if LoggingNight.enable_cache:
-            requests_cache.core.remove_expired_responses()
+            requests_cache.remove_expired_responses()
             print("running cache garbage collection")
         else:
             print("unable to collect garbage, unable to enable_cache")
@@ -242,7 +242,7 @@ class LoggingNight(object):
     @staticmethod
     def get_cache_entries():
         if LoggingNight.enable_cache:
-            cache = requests_cache.core.get_cache()
+            cache = requests_cache.get_cache()
             for key in cache.responses:
                 response, timestamp = cache.responses[key]
                 yield (timestamp, response.url)
