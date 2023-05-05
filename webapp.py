@@ -1,30 +1,20 @@
 #!/usr/bin/env python3
 
-import os
 import datetime
-import flask
 import json
-import schedule
+import os
 import threading
 import time
+
+import flask
+import schedule
+import markupsafe
 from dateutil import parser as dateparser
-from flask import Flask, render_template, request, Response
+from flask import Flask, Response, render_template, request
+
 from loggingnight import LoggingNight
 
-application = Flask(
-    "__name__", static_url_path="/assets", static_folder="templates/assets"
-)
 
-dev_mode = os.environ.get("LOGGINGNIGHT_DEV", "false")
-if dev_mode == "true":
-    import pprint
-
-    application.config["DEBUG"] = True
-else:
-    application.config["DEBUG"] = False
-
-
-@application.before_first_request
 def enable_housekeeping(run_interval=3600):
     cease_continuous_run = threading.Event()
 
@@ -39,6 +29,22 @@ def enable_housekeeping(run_interval=3600):
     continuous_thread.start()
 
     schedule.every(6).hours.do(LoggingNight.garbage_collect_cache)
+
+enable_housekeeping()
+
+application = Flask(
+    "__name__", static_url_path="/assets", static_folder="templates/assets"
+)
+
+dev_mode = os.environ.get("LOGGINGNIGHT_DEV", "false")
+if dev_mode == "true":
+    import pprint
+
+    application.config["DEBUG"] = True
+else:
+    application.config["DEBUG"] = False
+
+
 
 
 @application.route("/")
@@ -110,8 +116,8 @@ def do_lookup(icao_identifier, date):
 
 @application.route("/lookup", methods=["POST"])
 def lookup():
-    icao_identifier = flask.escape(request.form["airport"])
-    datestring = flask.escape(request.form["date"])
+    icao_identifier = markupsafe.escape(request.form["airport"])
+    datestring = markupsafe.escape(request.form["date"])
 
     if datestring:
         try:
