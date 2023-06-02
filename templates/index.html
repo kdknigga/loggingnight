@@ -136,7 +136,7 @@
         <div class="bg-circle-3 bg-circle"></div>
         <div class="bg-circle-4 bg-circle"></div>
     </header>
-    <section id="output" style="">
+    <section id="output" style="{% if not result or result['error'] %}display: none;">
         <div class="container">
             <div class="card">
                 <div class="card-body">
