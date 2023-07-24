@@ -1,15 +1,42 @@
 #!/usr/bin/env python3
 
 import datetime
+import logging
+import os
 import re
+from sys import modules
+from zoneinfo import ZoneInfo
+
 import requests
 from dateutil import parser as dateparser
-from sys import modules
+from timezonefinder import TimezoneFinder
+
+loglevel = os.environ.get("LN_LOGLEVEL", "warning")
+loglevel_map = {
+    "debug": logging.DEBUG,
+    "info": logging.INFO,
+    "warning": logging.WARNING,
+    "error": logging.ERROR,
+    "critical": logging.CRITICAL,
+}
+
+log = logging.getLogger("loggingnight-core")
+
+if loglevel in loglevel_map:
+    logging.basicConfig(
+        level=loglevel_map[loglevel], format="%(levelname)s: %(message)s"
+    )
 
 try:
     import requests_cache
+
+    log.info("Loaded requests_cache")
 except ImportError:
+    log.info("requests_cache unavailable")
     pass
+
+log.info("Using compiled TimezoneFinder: %s", str(TimezoneFinder.using_clang_pip()))
+log.info("Using numba with TimezoneFinder: %s", str(TimezoneFinder.using_numba()))
 
 
 def makedate(datestring):
@@ -23,6 +50,12 @@ def total_seconds(td):
         # timedelta has no total_seconds method in Python 2.6
         sec = td.seconds + td.days * 24 * 60 * 60
         return (float(td.microseconds) / 10**6) + sec
+
+
+def seconds_to_degrees(seconds: str) -> str:
+    """Takes decimal seconds with hemisphere abbreviation and returns decimal degrees with hemisphere abbreviation
+    174066.6241N -> 48.351840028N"""
+    return str(float(seconds[0:-1]) / 3600) + seconds[-1]
 
 
 def web_query(url, params=None, headers=None, verify_ssl=False):
@@ -48,10 +81,7 @@ def web_query(url, params=None, headers=None, verify_ssl=False):
 class StarfieldProvider(object):
     """Use Starfield to calculate astronomical information"""
 
-    from skyfield import api
-    from skyfield import almanac
-    from timezonefinder import TimezoneFinder
-    import pytz
+    from skyfield import almanac, api
 
     @staticmethod
     def nearest_minute(dt):
@@ -62,18 +92,13 @@ class StarfieldProvider(object):
         self.date = date
 
     def lookup(self):
+        log.info("Using the Starfield provider")
         ts = self.api.load.timescale()
         e = self.api.load("de421.bsp")
-        tf = self.TimezoneFinder()
+        tf = TimezoneFinder()
 
-        lat_degs = (
-            str(float(self.airport["response"]["latitude_secs"][0:-1]) / 3600)
-            + self.airport["response"]["latitude_secs"][-1]
-        )
-        long_degs = (
-            str(float(self.airport["response"]["longitude_secs"][0:-1]) / 3600)
-            + self.airport["response"]["longitude_secs"][-1]
-        )
+        lat_degs = seconds_to_degrees(self.airport["response"]["latitude_secs"])
+        long_degs = seconds_to_degrees(self.airport["response"]["longitude_secs"])
 
         location = self.api.Topos(lat_degs, long_degs)
 
@@ -82,20 +107,21 @@ class StarfieldProvider(object):
         )
 
         if not tzstring:
-            tz = self.pytz.utc
+            log.info("Unable to find timezone string, using UTC")
+            tz = ZoneInfo("UTC")
             in_zulu = True
         else:
-            tz = self.pytz.timezone(tzstring)
+            tz = ZoneInfo(tzstring)
             in_zulu = False
 
         t0 = ts.utc(
-            tz.localize(
-                datetime.datetime.combine(self.date, datetime.time(hour=0, minute=0))
+            datetime.datetime.combine(
+                self.date, datetime.time(hour=0, minute=0), tzinfo=tz
             )
         )
         t1 = ts.utc(
-            tz.localize(
-                datetime.datetime.combine(self.date, datetime.time(hour=23, minute=59))
+            datetime.datetime.combine(
+                self.date, datetime.time(hour=23, minute=59), tzinfo=tz
             )
         )
 
@@ -120,7 +146,7 @@ class StarfieldProvider(object):
 class USNOProvider(object):
     """Use the USNO API server for astronomical information"""
 
-    USNO_URL = "http://api.usno.navy.mil/rstt/oneday"
+    USNO_URL = "https://aa.usno.navy.mil/api/rstt/oneday"
 
     class AstronomicalException(IOError):
         """An error occured finding astronomical information"""
@@ -151,6 +177,7 @@ class USNOProvider(object):
         )
 
     def lookup(self):
+        log.info("Using the USNO provider")
         if self.tz is None:
             self.usno = web_query(
                 self.USNO_URL,
@@ -235,9 +262,9 @@ class LoggingNight(object):
     def garbage_collect_cache():
         if LoggingNight.enable_cache:
             requests_cache.remove_expired_responses()
-            print("running cache garbage collection")
+            log.info("running cache garbage collection")
         else:
-            print("unable to collect garbage, unable to enable_cache")
+            log.info("unable to collect garbage, unable to enable_cache")
 
     @staticmethod
     def get_cache_entries():
@@ -324,10 +351,6 @@ if __name__ == "__main__":
     import pprint
     import sys
 
-    def debug_print(string, level=1):
-        if args.debug >= level:
-            print(string, file=sys.stderr)
-
     def format_time(t, in_zulu):
         if in_zulu:
             return t.strftime("%I%MZ")
@@ -345,7 +368,6 @@ if __name__ == "__main__":
         default=datetime.date.today().isoformat(),
         help="Date of the flight",
     )
-    parser.add_argument("-D", "--debug", action="count", default=0)
     parser.add_argument(
         "-o",
         "--offset",
@@ -369,11 +391,10 @@ if __name__ == "__main__":
         try_cache=args.cache,
     )
 
-    debug_print("Airport debug info:", level=2)
-    debug_print(pprint.pformat(ln.airport, indent=4), level=2)
-    debug_print("", level=2)
-    # debug_print("US Naval Observatory debug info:", level=2)
-    # debug_print(pprint.pformat(ln.usno, indent=4), level=2)
+    log.debug("Airport debug info:")
+    log.debug(pprint.pformat(ln.airport, indent=4))
+    # log.debug("US Naval Observatory debug info:")
+    # log.debug(pprint.pformat(ln.usno, indent=4))
 
     print("Night times for %s on %s" % (ln.name, ln.date.isoformat()))
     if ln.in_zulu and ln.tz is None:
