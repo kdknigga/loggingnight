@@ -18,6 +18,7 @@ timezonefinder = {extras = ["numba"], version = "^6.2.0"}
 [tool.poetry.group.dev.dependencies]
 black = "^23.3.0"
 prospector = {extras = ["with-bandit", "with-mypy"], version = "^1.9.0"}
+pre-commit = "^3.4.0"
 
 [build-system]
 requires = ["poetry-core"]
