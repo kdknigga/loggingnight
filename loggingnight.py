@@ -205,6 +205,7 @@ class USNOProvider(object):
                 "date": self.date.strftime("%Y-%m-%d"),
                 "tz": offset,
             },
+            verify_ssl=True
         )
 
         if not self.usno["query_stats"]["status_code"] in {200, 304}:
