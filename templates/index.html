@@ -1,33 +1,21 @@
 <!DOCTYPE html>
-<html>
+<html data-bs-theme="light">
 
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
     <title>Logging Night</title>
     <meta name="description" content="Trouble keeping your sunsets straight from your civil twilights?  Can't remember when your TOMATOFLAMES require FLAPS?  Find USNO astronomical tables confusing?  We've got your back. Tell us your airport ID, and optionally a date, and we'll tell you what the Federal Aviation Regulations say about when you need to fly and what you can log.">
-    <link rel="stylesheet" href="assets/bootstrap/css/bootstrap.min.css?h=bc65eb485457883b631e0f5b21abc438">
+    <link rel="stylesheet" href="/assets/bootstrap/css/bootstrap.min.css?h=6b6062be949ba1ff4fc0cee06180b210">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Catamaran:100,200,300,400,500,600,700,800,900&amp;display=swap">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:100,100i,300,300i,400,400i,700,700i,900,900i&amp;display=swap">
-    <link rel="stylesheet" href="assets/css/styles.min.css?h=221760e0a278af60b8d3c8e239a25016">
+    <link rel="stylesheet" href="/assets/css/styles.min.css?h=221760e0a278af60b8d3c8e239a25016">
 <link rel="preload" href="/assets/js/jquery.min.js" as="script">
      <link rel="preload" href="/assets/bootstrap/js/bootstrap.min.js" as="script">
      <link rel="preload" href="/assets/js/script.min.js" as="script">
 </head>
 
 <body>
-<!-- Google Analytics -->
-<script>
-  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-  
-  ga('create', 'UA-100086272-1', 'auto');
-  ga('send', 'pageview');
-</script>
-<!-- End Google Analytics -->
-
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-TNDK01ZKQ1"></script>
 <script>
@@ -124,12 +112,11 @@
 
     <header class="masthead text-center text-white" style="padding-top: 50px;">
         <div class="masthead-content">
-            <p class="text-warning border-warning text-uppercase fw-bolder" id="error_output" style="font-size: 20px;margin-right: 16px;margin-left: 16px;background-color: rgba(255,255,255,1);">{% if result['error'] %}There is an error: {{ result['error'] }}{% endif %}<br></p>{% if dev_mode == "true" %}
+            <p class="text-warning border-warning text-uppercase fw-bolder" id="error_output" style="font-size: 20px;margin-right: 16px;margin-left: 16px;background-color: rgba(255,255,255,1); {% if not result['error'] %}display: none;{% endif %}">{% if result['error'] %}There is an error: {{ result['error'] }}{% endif %}<br></p>{% if dev_mode == "true" %}
             <p class="text-warning d-md-block fw-bold" id="dev_site_warning" style="font-size: 20px;margin-right: 16px;margin-left: 16px;background-color: rgba(255,255,255,1);">Warning: This is the dev website. Production can be found at&nbsp;<a href="https://loggingnight.org/">https://loggingnight.org/</a><br></p>{% endif %}
-            <p class="text-info d-md-block fw-bold" id="usno_down_info" style="font-size: 20px;margin-right: 16px;margin-left: 16px;background-color: rgba(255,255,255,1);">We are currently calculating our own astronomical data while <a href="https://www.usno.navy.mil/USNO/astronomical-applications">the USNO is out of service</a>. Please sanity check the times you get and report problems on <a href="https://github.com/kdknigga/loggingnight/issues">our GitHub page</a>.<br></p>
             <p class="d-none d-md-block" style="font-size: 20px;margin-right: 16px;margin-left: 16px;">Trouble keeping your sunsets straight from your civil twilights? Can't remember when your TOMATOFLAMES require FLAPS? Find USNO astronomical tables confusing? We've got your back.<br></p>
             <p style="font-size: 20px;margin-right: 16px;margin-left: 16px;">Plug in your airport ID, and optionally a date, below and we'll tell you what the Federal Aviation Regulations say about what you need to fly and what you can log.</p>
-            <form class="text-center d-inline-flex flex-column justify-content-center align-items-center align-content-center align-self-center flex-wrap" id="inp" style="margin-top: 32px;"><label class="form-label" for="airport">FAA or ICAO Airport ID</label><input class="form-control form-control-lg" type="text" id="airport" minlength="3" maxlength="4" required="" name="airport" placeholder="KORD" style="max-width: 560px;text-align: center;" autofocus="" value="{% if result %}{{ result['airport'].upper() }}{% endif %}" tabindex="1"><label class="form-label" for="date">Date</label><input class="form-control form-control-lg datetimepicker" type="text" id="date" name="date" style="max-width: 560px;text-align: center;" value="{% if result %}{{ result['date'] }}{% endif %}" autocomplete="off" tabindex="2"><button class="btn btn-primary btn-lg" id="submit_btn" type="submit" style="margin-top: 32px;" tabindex="3">Get Night</button></form>
+            <form class="text-center d-inline-flex flex-column justify-content-center align-items-center align-content-center align-self-center flex-wrap" id="inp" style="margin-top: 32px;"><label class="form-label" for="airport">FAA or ICAO Airport ID</label><input class="form-control form-control-lg" type="text" id="airport" minlength="3" maxlength="4" required="" name="airport" placeholder="KORD" style="max-width: 560px; text-align: center;" autofocus="" value="{% if result %}{{ result['airport'].upper() }}{% endif %}" tabindex="1"><label class="form-label" for="date">Date</label><input class="form-control form-control-lg datetimepicker" type="text" id="date" name="date" style="max-width: 560px; text-align: center;" value="{% if result %}{{ result['date'] }}{% endif %}" autocomplete="off" tabindex="2"><button class="btn btn-primary btn-lg" id="submit_btn" type="submit" style="margin-top: 32px;" tabindex="3">Get Night</button></form>
         </div>
         <div class="bg-circle-1 bg-circle"></div>
         <div class="bg-circle-2 bg-circle"></div>
@@ -217,12 +204,12 @@
 {% endif %}
     <footer class="py-5 bg-black">
         <div class="container">
-            <p class="text-center text-white m-0 small"><a href="https://github.com/kdknigga/loggingnight">check out the source on github!</a><br><a href="https://github.com/kdknigga/aeroinfo">airport information courtesy of aeroinfo</a><br><a href="http://aa.usno.navy.mil/data/docs/RS_OneDay.php">astronomical data courtesy of the united states naval observatory</a><br></p>
+            <p class="text-center text-white m-0 small"><a href="https://github.com/kdknigga/loggingnight">check out the source on github!</a><br><a href="https://github.com/kdknigga/aeroinfo">airport information courtesy of aeroinfo</a><br><a href="https://aa.usno.navy.mil/data/RS_OneDay">astronomical data courtesy of the united states naval observatory</a></p>
         </div>
     </footer>
-    <script src="assets/js/jquery.min.js?h=89312d34339dcd686309fe284b3f226f"></script>
-    <script src="assets/bootstrap/js/bootstrap.min.js?h=79ff9637b74326c362fb6f7f5801a7ba"></script>
-    <script src="assets/js/script.min.js?h=1254531c2591f2fa5fa5387c78700ec8"></script>
+    <script src="/assets/js/jquery.min.js?h=89312d34339dcd686309fe284b3f226f"></script>
+    <script src="/assets/bootstrap/js/bootstrap.min.js?h=a52d057774a957ffc5c4e3aabf79520a"></script>
+    <script src="/assets/js/script.min.js?h=1254531c2591f2fa5fa5387c78700ec8"></script>
 </body>
 
 </html>

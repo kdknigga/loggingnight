@@ -1,15 +1,43 @@
 #!/usr/bin/env python3
 
 import datetime
+import logging
+import os
 import re
+from sys import modules
+from zoneinfo import ZoneInfo
+
 import requests
 from dateutil import parser as dateparser
-from sys import modules
+from timezonefinder import TimezoneFinder
+
+loglevel = os.environ.get("LN_LOGLEVEL", "warning")
+loglevel_map = {
+    "debug": logging.DEBUG,
+    "info": logging.INFO,
+    "warning": logging.WARNING,
+    "error": logging.ERROR,
+    "critical": logging.CRITICAL,
+}
+
+log = logging.getLogger("loggingnight-core")
+
+if loglevel in loglevel_map:
+    logging.basicConfig(
+        level=loglevel_map[loglevel], format="%(levelname)s: %(message)s"
+    )
 
 try:
     import requests_cache
+
+    log.info("Loaded requests_cache")
 except ImportError:
+    log.info("requests_cache unavailable")
     pass
+
+tf = TimezoneFinder()
+log.info("Using compiled TimezoneFinder: %s", str(TimezoneFinder.using_clang_pip()))
+log.info("Using numba with TimezoneFinder: %s", str(TimezoneFinder.using_numba()))
 
 
 def makedate(datestring):
@@ -23,6 +51,20 @@ def total_seconds(td):
         # timedelta has no total_seconds method in Python 2.6
         sec = td.seconds + td.days * 24 * 60 * 60
         return (float(td.microseconds) / 10**6) + sec
+
+
+def seconds_to_degrees(seconds: str) -> float:
+    """Takes decimal seconds with hemisphere abbreviation and returns signed decimal degrees
+    174066.6241N -> 48.351840028"""
+    hemisphere = seconds[-1]
+    if hemisphere == "N" or hemisphere == "E":
+        sign = 1
+    elif hemisphere == "S" or hemisphere == "W":
+        sign = -1
+    else:
+        raise ValueError(f"Invalid hemisphere abbreviation '{hemisphere}'")
+
+    return (float(seconds[0:-1]) / 3600) * sign
 
 
 def web_query(url, params=None, headers=None, verify_ssl=False):
@@ -48,10 +90,7 @@ def web_query(url, params=None, headers=None, verify_ssl=False):
 class StarfieldProvider(object):
     """Use Starfield to calculate astronomical information"""
 
-    from skyfield import api
-    from skyfield import almanac
-    from timezonefinder import TimezoneFinder
-    import pytz
+    from skyfield import almanac, api
 
     @staticmethod
     def nearest_minute(dt):
@@ -60,20 +99,15 @@ class StarfieldProvider(object):
     def __init__(self, airport=None, date=None, tz=None):
         self.airport = airport
         self.date = date
+        self.usno = {"message": "Using the Starfield provider"}
 
     def lookup(self):
+        log.info("Using the Starfield provider")
         ts = self.api.load.timescale()
         e = self.api.load("de421.bsp")
-        tf = self.TimezoneFinder()
 
-        lat_degs = (
-            str(float(self.airport["response"]["latitude_secs"][0:-1]) / 3600)
-            + self.airport["response"]["latitude_secs"][-1]
-        )
-        long_degs = (
-            str(float(self.airport["response"]["longitude_secs"][0:-1]) / 3600)
-            + self.airport["response"]["longitude_secs"][-1]
-        )
+        lat_degs = seconds_to_degrees(self.airport["response"]["latitude_secs"])
+        long_degs = seconds_to_degrees(self.airport["response"]["longitude_secs"])
 
         location = self.api.Topos(lat_degs, long_degs)
 
@@ -82,20 +116,21 @@ class StarfieldProvider(object):
         )
 
         if not tzstring:
-            tz = self.pytz.utc
+            log.info("Unable to find timezone string, using UTC")
+            tz = ZoneInfo("UTC")
             in_zulu = True
         else:
-            tz = self.pytz.timezone(tzstring)
+            tz = ZoneInfo(tzstring)
             in_zulu = False
 
         t0 = ts.utc(
-            tz.localize(
-                datetime.datetime.combine(self.date, datetime.time(hour=0, minute=0))
+            datetime.datetime.combine(
+                self.date, datetime.time(hour=0, minute=0), tzinfo=tz
             )
         )
         t1 = ts.utc(
-            tz.localize(
-                datetime.datetime.combine(self.date, datetime.time(hour=23, minute=59))
+            datetime.datetime.combine(
+                self.date, datetime.time(hour=23, minute=59), tzinfo=tz
             )
         )
 
@@ -120,73 +155,58 @@ class StarfieldProvider(object):
 class USNOProvider(object):
     """Use the USNO API server for astronomical information"""
 
-    USNO_URL = "http://api.usno.navy.mil/rstt/oneday"
+    USNO_URL = "https://aa.usno.navy.mil/api/rstt/oneday"
 
     class AstronomicalException(IOError):
         """An error occured finding astronomical information"""
-
-    @staticmethod
-    def fix_location(location):
-        # The split on / is required for airport like KDPA where
-        # the location is "Chicago / west Chicago, IL"
-        location = location.split("/")[-1]
-
-        # KSTL and KSUS have location "St Louis, MO" but USNO wants
-        # Saint abbreviated with the dot, i.e., "St."
-        st_no_dot = re.compile(r"^S[tT](?!\.)\b")
-        location = st_no_dot.sub("St.", location)
-        return location
 
     def __init__(self, airport=None, date=None, tz=None):
         self.airport = airport
         self.date = date
         self.tz = tz
         self.usno = {}
-        in_zulu = False
-
-        self.location = self.fix_location(
-            self.airport["response"]["city"]
-            + ", "
-            + self.airport["response"]["state_code"]
-        )
 
     def lookup(self):
+        log.info("Using the USNO provider")
+
+        lat_degs = seconds_to_degrees(self.airport["response"]["latitude_secs"])
+        long_degs = seconds_to_degrees(self.airport["response"]["longitude_secs"])
+        location = str(lat_degs) + "," + str(long_degs)
+
         if self.tz is None:
-            self.usno = web_query(
-                self.USNO_URL,
-                params={
-                    "ID": "lndo",
-                    "loc": self.location,
-                    "date": self.date.strftime("%m/%d/%Y"),
-                },
-            )
-            in_zulu = False
+            tzstring = tf.timezone_at(lng=long_degs, lat=lat_degs)
 
-        if not "response" in self.usno or not "sundata" in self.usno["response"]:
-            # The USNO hasn't recognized our location, probably.  Try again with lat+long.
-            # Lookups with lat+long require a timezone
-            lat_degs = (
-                str(float(self.airport["response"]["latitude_secs"][0:-1]) / 3600)
-                + self.airport["response"]["latitude_secs"][-1]
-            )
-            long_degs = (
-                str(float(self.airport["response"]["longitude_secs"][0:-1]) / 3600)
-                + self.airport["response"]["longitude_secs"][-1]
-            )
-            self.location = lat_degs + "," + long_degs
-            self.offset = self.tz if self.tz is not None else "0"
+            if not tzstring:
+                log.info("Unable to find timezone string, using UTC")
+                offset = 0
+                in_zulu = True
+            else:
+                noon = datetime.time(hour=12, minute=0, second=0)
+                utc_datetime = datetime.datetime.combine(
+                    date=self.date, time=noon, tzinfo=ZoneInfo("UTC")
+                )
+                local_datetime = datetime.datetime.combine(
+                    date=self.date, time=noon, tzinfo=ZoneInfo(tzstring)
+                )
+                offset = (utc_datetime - local_datetime) / datetime.timedelta(hours=1)
+                in_zulu = False
+        else:
+            offset = self.tz
+            if offset == 0:
+                in_zulu = True
+            else:
+                in_zulu = False
 
-            self.usno = self.web_query(
-                self.USNO_URL,
-                params={
-                    "id": "lndo",
-                    "coords": self.location,
-                    "date": self.date.strftime("%m/%d/%Y"),
-                    "tz": self.offset,
-                },
-            )
-
-            in_zulu = float(self.offset) == 0
+        self.usno = web_query(
+            self.USNO_URL,
+            params={
+                "ID": "lndo",
+                "coords": location,
+                "date": self.date.strftime("%Y-%m-%d"),
+                "tz": offset,
+            },
+            verify_ssl=True
+        )
 
         if not self.usno["query_stats"]["status_code"] in {200, 304}:
             raise self.AstronomicalException(
@@ -197,19 +217,28 @@ class USNOProvider(object):
                 )
             )
 
-        if not "response" in self.usno or not "sundata" in self.usno["response"]:
+        if not "response" in self.usno or (
+            not "properties" in self.usno["response"]
+            and not "data" in self.usno["response"]["properties"]
+            and not "sundata" in self.usno["response"]["properties"]["data"]
+        ):
             raise self.AstronomicalException(
-                "Unable to find sun data for %s" % self.location
+                "Unable to find sun data for %s" % location
             )
 
         phenTimes = dict(
-            (i["phen"], i["time"]) for i in self.usno["response"]["sundata"]
+            (i["phen"], i["time"])
+            for i in self.usno["response"]["properties"]["data"]["sundata"]
         )
-        sun_set = dateparser.parse(phenTimes["S"])
-        end_civil_twilight = dateparser.parse(phenTimes["EC"])
+        sun_rise = dateparser.parse(phenTimes["Rise"])
+        sun_set = dateparser.parse(phenTimes["Set"])
+        start_civil_twilight = dateparser.parse(phenTimes["Begin Civil Twilight"])
+        end_civil_twilight = dateparser.parse(phenTimes["End Civil Twilight"])
 
         return {
+            "sun_rise": sun_rise,
             "sun_set": sun_set,
+            "start_civil_twilight": start_civil_twilight,
             "end_civil_twilight": end_civil_twilight,
             "in_zulu": in_zulu,
         }
@@ -235,9 +264,9 @@ class LoggingNight(object):
     def garbage_collect_cache():
         if LoggingNight.enable_cache:
             requests_cache.remove_expired_responses()
-            print("running cache garbage collection")
+            log.info("running cache garbage collection")
         else:
-            print("unable to collect garbage, unable to enable_cache")
+            log.info("unable to collect garbage, unable to enable_cache")
 
     @staticmethod
     def get_cache_entries():
@@ -299,9 +328,9 @@ class LoggingNight(object):
             )
 
         # Look up astronomical data here
-        # astro_provider = USNOProvider(self.airport, self.date, self.tz)
-        astro_provider = StarfieldProvider(self.airport, self.date, self.tz)
-        times = astro_provider.lookup()
+        self.astro_provider = USNOProvider(self.airport, self.date, self.tz)
+        #self.astro_provider = StarfieldProvider(self.airport, self.date, self.tz)
+        times = self.astro_provider.lookup()
 
         self.name = self.airport["response"]["name"]
         self.city_st = (
@@ -324,10 +353,6 @@ if __name__ == "__main__":
     import pprint
     import sys
 
-    def debug_print(string, level=1):
-        if args.debug >= level:
-            print(string, file=sys.stderr)
-
     def format_time(t, in_zulu):
         if in_zulu:
             return t.strftime("%I%MZ")
@@ -345,7 +370,6 @@ if __name__ == "__main__":
         default=datetime.date.today().isoformat(),
         help="Date of the flight",
     )
-    parser.add_argument("-D", "--debug", action="count", default=0)
     parser.add_argument(
         "-o",
         "--offset",
@@ -369,11 +393,11 @@ if __name__ == "__main__":
         try_cache=args.cache,
     )
 
-    debug_print("Airport debug info:", level=2)
-    debug_print(pprint.pformat(ln.airport, indent=4), level=2)
-    debug_print("", level=2)
-    # debug_print("US Naval Observatory debug info:", level=2)
-    # debug_print(pprint.pformat(ln.usno, indent=4), level=2)
+    log.debug("Airport debug info:")
+    log.debug(pprint.pformat(ln.airport, indent=4))
+    if hasattr(ln.astro_provider, "usno"):
+        log.debug("USNO debug info:")
+        log.debug(pprint.pformat(ln.astro_provider.usno, indent=4))
 
     print("Night times for %s on %s" % (ln.name, ln.date.isoformat()))
     if ln.in_zulu and ln.tz is None:

@@ -95,7 +95,7 @@ def do_lookup(icao_identifier, date):
             hour_before=ln.hour_before_sunrise.strftime(time_format),
             hour_after=ln.hour_after_sunset.strftime(time_format),
             airport_debug=pprint.pformat(ln.airport, indent=4),
-            # usno_debug=pprint.pformat(ln.usno, indent=4)
+            usno_debug=pprint.pformat(ln.astro_provider.usno, indent=4)
         )
     else:
         result = dict(
