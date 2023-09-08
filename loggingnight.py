@@ -3,7 +3,6 @@
 import datetime
 import logging
 import os
-import re
 from sys import modules
 from zoneinfo import ZoneInfo
 
@@ -33,7 +32,6 @@ try:
     log.info("Loaded requests_cache")
 except ImportError:
     log.info("requests_cache unavailable")
-    pass
 
 tf = TimezoneFinder()
 log.info("Using compiled TimezoneFinder: %s", str(TimezoneFinder.using_clang_pip()))
@@ -45,21 +43,17 @@ def makedate(datestring):
 
 
 def total_seconds(td):
-    if hasattr(td, "total_seconds"):
-        return td.total_seconds()
-    else:
-        # timedelta has no total_seconds method in Python 2.6
-        sec = td.seconds + td.days * 24 * 60 * 60
-        return (float(td.microseconds) / 10**6) + sec
+    # This function existed for Python 2 compatability.  This should be cleaned up.
+    return td.total_seconds()
 
 
 def seconds_to_degrees(seconds: str) -> float:
     """Takes decimal seconds with hemisphere abbreviation and returns signed decimal degrees
     174066.6241N -> 48.351840028"""
     hemisphere = seconds[-1]
-    if hemisphere == "N" or hemisphere == "E":
+    if hemisphere in ("N", "E"):
         sign = 1
-    elif hemisphere == "S" or hemisphere == "W":
+    elif hemisphere in ("S", "W"):
         sign = -1
     else:
         raise ValueError(f"Invalid hemisphere abbreviation '{hemisphere}'")
@@ -83,24 +77,27 @@ def web_query(url, params=None, headers=None, verify_ssl=False):
 
     try:
         return {"query_stats": stats, "response": r.json()}
-    except:
+    except:  # pylint: disable=bare-except # noqa
         return {"query_stats": stats}
 
 
-class StarfieldProvider(object):
+class StarfieldProvider:
     """Use Starfield to calculate astronomical information"""
 
+    # pylint: disable=import-outside-toplevel
     from skyfield import almanac, api
 
     @staticmethod
     def nearest_minute(dt):
         return (dt + datetime.timedelta(seconds=30)).replace(second=0, microsecond=0)
 
+    # pylint: disable=unused-argument
     def __init__(self, airport=None, date=None, tz=None):
         self.airport = airport
         self.date = date
         self.usno = {"message": "Using the Starfield provider"}
 
+    # pylint: disable=too-many-locals
     def lookup(self):
         log.info("Using the Starfield provider")
         ts = self.api.load.timescale()
@@ -152,7 +149,7 @@ class StarfieldProvider(object):
         }
 
 
-class USNOProvider(object):
+class USNOProvider:
     """Use the USNO API server for astronomical information"""
 
     USNO_URL = "https://aa.usno.navy.mil/api/rstt/oneday"
@@ -192,10 +189,7 @@ class USNOProvider(object):
                 in_zulu = False
         else:
             offset = self.tz
-            if offset == 0:
-                in_zulu = True
-            else:
-                in_zulu = False
+            in_zulu = not bool(offset)
 
         self.usno = web_query(
             self.USNO_URL,
@@ -205,26 +199,20 @@ class USNOProvider(object):
                 "date": self.date.strftime("%Y-%m-%d"),
                 "tz": offset,
             },
-            verify_ssl=True
+            verify_ssl=True,
         )
 
-        if not self.usno["query_stats"]["status_code"] in {200, 304}:
+        if self.usno["query_stats"]["status_code"] not in {200, 304}:
             raise self.AstronomicalException(
-                "The USNO seems to be having problems: %d %s"
-                % (
-                    self.usno["query_stats"]["status_code"],
-                    self.usno["query_stats"]["status_text"],
-                )
+                f"The USNO seems to be having problems: {self.usno['query_stats']['status_code']} {self.usno['query_stats']['status_text']}"
             )
 
-        if not "response" in self.usno or (
-            not "properties" in self.usno["response"]
-            and not "data" in self.usno["response"]["properties"]
-            and not "sundata" in self.usno["response"]["properties"]["data"]
+        if "response" not in self.usno or (
+            "properties" not in self.usno["response"]
+            and "data" not in self.usno["response"]["properties"]
+            and "sundata" not in self.usno["response"]["properties"]["data"]
         ):
-            raise self.AstronomicalException(
-                "Unable to find sun data for %s" % location
-            )
+            raise self.AstronomicalException(f"Unable to find sun data for {location}")
 
         phenTimes = dict(
             (i["phen"], i["time"])
@@ -244,7 +232,7 @@ class USNOProvider(object):
         }
 
 
-class LoggingNight(object):
+class LoggingNight:
     """Provide an ICAO code and a date and get what the FAA considers night"""
 
     AIRPORTINFO_URL = "https://api.aeronautical.info/dev/"
@@ -252,7 +240,7 @@ class LoggingNight(object):
 
     @staticmethod
     def enable_cache(expire_after=691200):
-        if not "requests_cache" in modules:
+        if "requests_cache" not in modules:
             return False
 
         requests_cache.install_cache(
@@ -262,7 +250,7 @@ class LoggingNight(object):
 
     @staticmethod
     def garbage_collect_cache():
-        if LoggingNight.enable_cache:
+        if LoggingNight.enable_cache():
             requests_cache.remove_expired_responses()
             log.info("running cache garbage collection")
         else:
@@ -270,7 +258,7 @@ class LoggingNight(object):
 
     @staticmethod
     def get_cache_entries():
-        if LoggingNight.enable_cache:
+        if LoggingNight.enable_cache():
             cache = requests_cache.get_cache()
             for entry in cache.values():
                 yield (entry.expires.isoformat(), entry.url)
@@ -278,6 +266,7 @@ class LoggingNight(object):
     class LocationException(IOError):
         """An error occured finding airport location information"""
 
+    # pylint: disable=too-many-arguments
     def __init__(self, icao, date, zulu=None, offset=None, try_cache=False):
         self.icao = icao.strip().upper()
         self.date = date
@@ -291,9 +280,9 @@ class LoggingNight(object):
             self.cache_enabled = False
 
         self.tz = None
-        if self.offset is not None and self.zulu == True:
+        if self.offset is not None and self.zulu is True:
             raise ValueError("Specify either a timezone offset or Zulu time, not both")
-        elif self.zulu == True:
+        if self.zulu is True:
             self.tz = "0"
         elif self.offset is not None:
             self.tz = str(self.offset)
@@ -310,26 +299,21 @@ class LoggingNight(object):
 
         if not self.airport["query_stats"]["status_code"] in {200, 304}:
             raise self.LocationException(
-                "Received the following error looking up the airport: %d %s"
-                % (
-                    self.airport["query_stats"]["status_code"],
-                    self.airport["query_stats"]["status_text"],
-                )
+                f"Received the following error looking up the airport: {self.airport['query_stats']['status_code']} {self.airport['query_stats']['status_text']}"  # noqa
             )
 
         if (
-            not "response" in self.airport
-            or not "city" in self.airport["response"]
+            "response" not in self.airport
+            or "city" not in self.airport["response"]
             or not self.airport["response"]["city"]
         ):
             raise self.LocationException(
-                "Unable to find location information for %s.  Make sure you're using an ICAO identifier (for example, KDPA not DPA)"
-                % self.icao
+                f"Unable to find location information for {self.icao}.  Make sure you're using an ICAO identifier (for example, KDPA not DPA)"
             )
 
         # Look up astronomical data here
         self.astro_provider = USNOProvider(self.airport, self.date, self.tz)
-        #self.astro_provider = StarfieldProvider(self.airport, self.date, self.tz)
+        # self.astro_provider = StarfieldProvider(self.airport, self.date, self.tz)
         times = self.astro_provider.lookup()
 
         self.name = self.airport["response"]["name"]
@@ -349,15 +333,12 @@ class LoggingNight(object):
 
 if __name__ == "__main__":
     import argparse
-    import datetime
     import pprint
-    import sys
 
     def format_time(t, in_zulu):
         if in_zulu:
             return t.strftime("%I%MZ")
-        else:
-            return t.strftime("%I:%M %p")
+        return t.strftime("%I:%M %p")
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -399,24 +380,18 @@ if __name__ == "__main__":
         log.debug("USNO debug info:")
         log.debug(pprint.pformat(ln.astro_provider.usno, indent=4))
 
-    print("Night times for %s on %s" % (ln.name, ln.date.isoformat()))
+    print(f"Night times for {ln.name} on {ln.date.isoformat()}")
     if ln.in_zulu and ln.tz is None:
         print("  - All times are in Zulu; use --offset or --zulu to force a time zone.")
     print("")
-    print(
-        "%s -- Sun set\nPosition lights required" % format_time(ln.sun_set, ln.in_zulu)
-    )
+    print(f"{format_time(ln.sun_set, ln.in_zulu)} -- Sun set\nPosition lights required")
     print("(14 CFR 91.209)")
     print("")
-    print(
-        "%s -- End of civil twilight" % format_time(ln.end_civil_twilight, ln.in_zulu)
-    )
+    print(f"{format_time(ln.end_civil_twilight, ln.in_zulu)} -- End of civil twilight")
     print("Logging of night time can start and aircraft must be night equipped")
     print("(14 CFR 61.51(b)(3)(i), 14 CFR 91.205(c), and 14 CFR 1.1)")
     print("")
-    print(
-        "%s -- One hour after sun set" % format_time(ln.hour_after_sunset, ln.in_zulu)
-    )
+    print(f"{format_time(ln.hour_after_sunset, ln.in_zulu)} -- One hour after sun set")
     print("Must be night current to carry passengers and")
     print("logging of night takeoffs and landings can start")
     print("(14 CFR 61.57(b))")

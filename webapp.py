@@ -7,8 +7,8 @@ import threading
 import time
 
 import flask
-import schedule
 import markupsafe
+import schedule
 from dateutil import parser as dateparser
 from flask import Flask, Response, render_template, request
 
@@ -20,7 +20,7 @@ def enable_housekeeping(run_interval=3600):
 
     class ScheduleThread(threading.Thread):
         @staticmethod
-        def run():
+        def run():  # pylint: disable=arguments-differ
             while not cease_continuous_run.is_set():
                 schedule.run_pending()
                 time.sleep(run_interval)
@@ -29,6 +29,7 @@ def enable_housekeeping(run_interval=3600):
     continuous_thread.start()
 
     schedule.every(6).hours.do(LoggingNight.garbage_collect_cache)
+
 
 enable_housekeeping()
 
@@ -43,8 +44,6 @@ if dev_mode == "true":
     application.config["DEBUG"] = True
 else:
     application.config["DEBUG"] = False
-
-
 
 
 @application.route("/")
@@ -83,6 +82,7 @@ def do_lookup(icao_identifier, date):
         time_format = "%I:%M %p"
 
     if dev_mode == "true":
+        # pylint: disable=use-dict-literal
         result = dict(
             airport=icao_identifier,
             name=ln.name,
@@ -95,9 +95,10 @@ def do_lookup(icao_identifier, date):
             hour_before=ln.hour_before_sunrise.strftime(time_format),
             hour_after=ln.hour_after_sunset.strftime(time_format),
             airport_debug=pprint.pformat(ln.airport, indent=4),
-            usno_debug=pprint.pformat(ln.astro_provider.usno, indent=4)
+            usno_debug=pprint.pformat(ln.astro_provider.usno, indent=4),
         )
     else:
+        # pylint: disable=use-dict-literal
         result = dict(
             airport=icao_identifier,
             name=ln.name,
@@ -123,7 +124,7 @@ def lookup():
         try:
             date = dateparser.parse(datestring).date()
         except ValueError:
-            return "Unable to understand date %s" % datestring, 400
+            return f"Unable to understand date {datestring}", 400
     else:
         date = datetime.date.today()
 
@@ -131,7 +132,7 @@ def lookup():
         result = do_lookup(icao_identifier, date)
     except Exception as e:
         return str(e), 400
-    except:
+    except:  # pylint: disable=bare-except # noqa
         flask.abort(500)
 
     return json.dumps(result)
@@ -149,13 +150,14 @@ def displayCache():
             ),
             mimetype="application/json",
         )
-    else:
-        return False
+
+    return False
 
 
 @application.route("/sitemap.txt")
 @application.route("/static/sitemap.txt")
 def sitemap():
+    # pylint: disable=consider-using-f-string
     base_url = "https://loggingnight.org/?airport="
     # fmt: off
     icao_airports = ["VNY", "DVT", "APA", "PRC", "HIO", "FFZ", "IWA", "GFK", "LGB", "SEE", "MYF", "SFB", "SNA", "CHD", "FPR", "FRG", "TMB", \
