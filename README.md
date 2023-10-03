@@ -109,4 +109,3 @@ Must be night current to carry passengers and
 logging of night takeoffs and landings can start
 (14 CFR 61.57(b))
 ```
-

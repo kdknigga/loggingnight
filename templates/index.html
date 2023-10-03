@@ -47,7 +47,7 @@
           $('#submit_btn').prop('disabled', true);
           var queryString = "?airport=" + encodeURIComponent($('#airport').val()) + "&date=" + encodeURIComponent($('#date').val());
           window.history.pushState(null, null, queryString);
-          if (typeof window.ga === "function") { 
+          if (typeof window.ga === "function") {
             window.ga('set', 'page', '/' + queryString);
             window.ga('send', 'pageview');
           };
@@ -82,11 +82,11 @@
 
             }
           }, 'json')
-            .fail(function(data) { 
+            .fail(function(data) {
               $('#error_output').text("An error has occurred: ");
               $('#error_output').append(data.responseText);
               $('#error_output').show()
-              $('#output').hide(); 
+              $('#output').hide();
             })
             .always(function() {
               $('#submit_btn').prop('disabled', false);

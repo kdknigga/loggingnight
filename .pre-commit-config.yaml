@@ -19,6 +19,11 @@ repos:
     hooks:
       - id: check-json5
 
+  - repo: https://github.com/floatingpurr/sync_with_poetry
+    rev: 1.1.0
+    hooks:
+      - id: sync_with_poetry
+
   - repo: https://github.com/PyCQA/isort
     rev: 5.12.0
     hooks:
@@ -26,7 +31,7 @@ repos:
         args: ["--profile", "black", "--filter-files"]
 
   - repo: https://github.com/psf/black
-    rev: 23.7.0
+    rev: 23.9.1
     hooks:
       - id: black
         language_version: python3
