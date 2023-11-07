@@ -218,10 +218,14 @@ class USNOProvider:
             (i["phen"], i["time"])
             for i in self.usno["response"]["properties"]["data"]["sundata"]
         )
-        sun_rise = dateparser.parse(phenTimes["Rise"])
-        sun_set = dateparser.parse(phenTimes["Set"])
-        start_civil_twilight = dateparser.parse(phenTimes["Begin Civil Twilight"])
-        end_civil_twilight = dateparser.parse(phenTimes["End Civil Twilight"])
+        sun_rise = dateparser.parse(phenTimes.get("Rise", "00:00"))
+        sun_set = dateparser.parse(phenTimes.get("Set", "23:59"))
+        start_civil_twilight = dateparser.parse(
+            phenTimes.get("Begin Civil Twilight", "00:00")
+        )
+        end_civil_twilight = dateparser.parse(
+            phenTimes.get("End Civil Twilight", "23:59")
+        )
 
         return {
             "sun_rise": sun_rise,
