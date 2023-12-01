@@ -14,6 +14,7 @@ requests-cache = "^1.0.1"
 schedule = "^1.2.0"
 skyfield = "^1.46"
 timezonefinder = {extras = ["numba"], version = "^6.2.0"}
+sentry-sdk = {extras = ["flask"], version = "^1.37.1"}
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.3.0"

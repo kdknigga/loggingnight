@@ -5,22 +5,59 @@ import json
 import os
 import threading
 import time
+from typing import Literal
 
 import flask
 import markupsafe
 import schedule
+import sentry_sdk
 from dateutil import parser as dateparser
 from flask import Flask, Response, render_template, request
 
 from loggingnight import LoggingNight
 
+sentry_debug: bool = False
+sentry_traces_sample_rate: float = 1.0
+sentry_profiles_sample_rate: float = 0.6
+gc_hours: int = 6
+dev_mode: bool = False
 
-def enable_housekeeping(run_interval=3600):
+app_env: str = os.environ.get("ENVIRONMENT", "local")
+match app_env:
+    case "production":
+        pass
+    case "development":
+        sentry_profiles_sample_rate = 1.0
+        dev_mode = True
+    case "debug":
+        sentry_profiles_sample_rate = 1.0
+        sentry_debug = True
+        dev_mode = True
+        gc_hours = 1
+    case _:
+        # Default to "local"
+        app_env = "local"
+        sentry_profiles_sample_rate = 1.0
+        dev_mode = True
+        gc_hours = 1
+
+sentry_dsn: str | None = os.environ.get("SENTRY_DSN", None)
+if sentry_dsn is not None:
+    sentry_sdk.init(
+        dsn=sentry_dsn,
+        traces_sample_rate=sentry_traces_sample_rate,
+        profiles_sample_rate=sentry_profiles_sample_rate,
+        enable_tracing=True,
+        debug=sentry_debug,
+        environment=app_env,
+    )
+
+
+def enable_housekeeping(run_interval: int = 3600):
     cease_continuous_run = threading.Event()
 
     class ScheduleThread(threading.Thread):
-        @staticmethod
-        def run():  # pylint: disable=arguments-differ
+        def run(self) -> None:
             while not cease_continuous_run.is_set():
                 schedule.run_pending()
                 time.sleep(run_interval)
@@ -28,7 +65,7 @@ def enable_housekeeping(run_interval=3600):
     continuous_thread = ScheduleThread()
     continuous_thread.start()
 
-    schedule.every(6).hours.do(LoggingNight.garbage_collect_cache)
+    schedule.every(gc_hours).hours.do(LoggingNight.garbage_collect_cache)
 
 
 enable_housekeeping()
@@ -37,18 +74,15 @@ application = Flask(
     "__name__", static_url_path="/assets", static_folder="templates/assets"
 )
 
-dev_mode = os.environ.get("LOGGINGNIGHT_DEV", "false")
-if dev_mode == "true":
+if dev_mode:
     import pprint
 
-    application.config["DEBUG"] = True
-else:
-    application.config["DEBUG"] = False
+application.config["DEBUG"] = dev_mode
 
 
 @application.route("/")
-def index():
-    icao_identifier = request.args.get("airport")
+def index() -> tuple[str, int] | str:
+    icao_identifier: str | None = request.args.get("airport")
 
     try:
         date = dateparser.parse(
@@ -73,7 +107,7 @@ def index():
     return render_template("index.html", dev_mode=dev_mode, result=result)
 
 
-def do_lookup(icao_identifier, date):
+def do_lookup(icao_identifier: str, date) -> dict[str, str]:
     ln = LoggingNight(icao_identifier, date, try_cache=True)
 
     if ln.in_zulu:
@@ -81,7 +115,7 @@ def do_lookup(icao_identifier, date):
     else:
         time_format = "%I:%M %p"
 
-    if dev_mode == "true":
+    if dev_mode:
         # pylint: disable=use-dict-literal
         result = dict(
             airport=icao_identifier,
@@ -116,7 +150,7 @@ def do_lookup(icao_identifier, date):
 
 
 @application.route("/lookup", methods=["POST"])
-def lookup():
+def lookup() -> tuple[str, int] | str:
     icao_identifier = markupsafe.escape(request.form["airport"])
     datestring = markupsafe.escape(request.form["date"])
 
@@ -129,7 +163,7 @@ def lookup():
         date = datetime.date.today()
 
     try:
-        result = do_lookup(icao_identifier, date)
+        result: dict[str, str] = do_lookup(icao_identifier, date)
     except Exception as e:
         return str(e), 400
     except:  # pylint: disable=bare-except # noqa
@@ -139,7 +173,7 @@ def lookup():
 
 
 @application.route("/displayCache")
-def displayCache():
+def displayCache() -> Response | Literal[False]:
     if LoggingNight.enable_cache():
         return Response(
             json.dumps(
@@ -160,7 +194,7 @@ def sitemap():
     # pylint: disable=consider-using-f-string
     base_url = "https://loggingnight.org/?airport="
     # fmt: off
-    icao_airports = ["VNY", "DVT", "APA", "PRC", "HIO", "FFZ", "IWA", "GFK", "LGB", "SEE", "MYF", "SFB", "SNA", "CHD", "FPR", "FRG", "TMB", \
+    icao_airports: list[str] = ["VNY", "DVT", "APA", "PRC", "HIO", "FFZ", "IWA", "GFK", "LGB", "SEE", "MYF", "SFB", "SNA", "CHD", "FPR", "FRG", "TMB", \
                      "PAO", "RVS", "VRB", "DAB", "PMP", "PVU", "SDL", "RHV", "CNO", "DTO", "BJC", "PDK", "FIN", "SGJ", "ORF", "CRQ", "DCU", \
                      "SMO", "ISM", "LVK", "VGT", "EUL", "BFI", "BDN", "HPN", "FXE", "CRG", "CMA", "LAL", "AWO", "ORD", "ATL", "LAX", "DFW", \
                      "DEN", "CLT", "LAS", "IAH", "JFK", "SFO", "SEA", "PHX", "EWR", "MIA", "DTW", "MSP", "LGA", "BOS", "PHL", "FLL", "MCO", \

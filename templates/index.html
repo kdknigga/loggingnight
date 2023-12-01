@@ -73,7 +73,7 @@
                 scrollTop: ($('#output').offset().top)
               },500);
 
-              if ("{{ dev_mode }}" == "true")
+              if ("{{ dev_mode|lower }}" == "true")
               {
                   $('#debug').text(data.airport_debug);
                   $('#debug').append("\n");
@@ -112,7 +112,7 @@
 
     <header class="masthead text-center text-white" style="padding-top: 50px;">
         <div class="masthead-content">
-            <p class="text-warning border-warning text-uppercase fw-bolder" id="error_output" style="font-size: 20px;margin-right: 16px;margin-left: 16px;background-color: rgba(255,255,255,1); {% if not result['error'] %}display: none;{% endif %}">{% if result['error'] %}There is an error: {{ result['error'] }}{% endif %}<br></p>{% if dev_mode == "true" %}
+            <p class="text-warning border-warning text-uppercase fw-bolder" id="error_output" style="font-size: 20px;margin-right: 16px;margin-left: 16px;background-color: rgba(255,255,255,1); {% if not result['error'] %}display: none;{% endif %}">{% if result['error'] %}There is an error: {{ result['error'] }}{% endif %}<br></p>{% if dev_mode %}
             <p class="text-warning d-md-block fw-bold" id="dev_site_warning" style="font-size: 20px;margin-right: 16px;margin-left: 16px;background-color: rgba(255,255,255,1);">Warning: This is the dev website. Production can be found at&nbsp;<a href="https://loggingnight.org/">https://loggingnight.org/</a><br></p>{% endif %}
             <p class="d-none d-md-block" style="font-size: 20px;margin-right: 16px;margin-left: 16px;">Trouble keeping your sunsets straight from your civil twilights? Can't remember when your TOMATOFLAMES require FLAPS? Find USNO astronomical tables confusing? We've got your back.<br></p>
             <p style="font-size: 20px;margin-right: 16px;margin-left: 16px;">Plug in your airport ID, and optionally a date, below and we'll tell you what the Federal Aviation Regulations say about what you need to fly and what you can log.</p>
@@ -199,7 +199,7 @@
                 </div>
             </div>
         </div>
-    </section>{% if dev_mode == "true" %}
+    </section>{% if dev_mode %}
 <pre id="debug" style="text-align: left;">{% if result %}{{ result|pprint }}{% endif %}</pre>
 {% endif %}
     <footer class="py-5 bg-black">
