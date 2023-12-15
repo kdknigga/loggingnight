@@ -5,7 +5,6 @@ import json
 import os
 import threading
 import time
-from typing import Literal
 
 import flask
 import markupsafe
@@ -173,7 +172,7 @@ def lookup() -> tuple[str, int] | str:
 
 
 @application.route("/displayCache")
-def displayCache() -> Response | Literal[False]:
+def displayCache() -> Response:
     if LoggingNight.enable_cache():
         return Response(
             json.dumps(
@@ -185,16 +184,16 @@ def displayCache() -> Response | Literal[False]:
             mimetype="application/json",
         )
 
-    return False
+    return Response(response="", status=204)
 
 
 @application.route("/sitemap.txt")
 @application.route("/static/sitemap.txt")
-def sitemap():
+def sitemap() -> tuple[str, int, dict[str, str]]:
     # pylint: disable=consider-using-f-string
     base_url = "https://loggingnight.org/?airport="
     # fmt: off
-    icao_airports: list[str] = ["VNY", "DVT", "APA", "PRC", "HIO", "FFZ", "IWA", "GFK", "LGB", "SEE", "MYF", "SFB", "SNA", "CHD", "FPR", "FRG", "TMB", \
+    icao_airports = ["VNY", "DVT", "APA", "PRC", "HIO", "FFZ", "IWA", "GFK", "LGB", "SEE", "MYF", "SFB", "SNA", "CHD", "FPR", "FRG", "TMB", \
                      "PAO", "RVS", "VRB", "DAB", "PMP", "PVU", "SDL", "RHV", "CNO", "DTO", "BJC", "PDK", "FIN", "SGJ", "ORF", "CRQ", "DCU", \
                      "SMO", "ISM", "LVK", "VGT", "EUL", "BFI", "BDN", "HPN", "FXE", "CRG", "CMA", "LAL", "AWO", "ORD", "ATL", "LAX", "DFW", \
                      "DEN", "CLT", "LAS", "IAH", "JFK", "SFO", "SEA", "PHX", "EWR", "MIA", "DTW", "MSP", "LGA", "BOS", "PHL", "FLL", "MCO", \
