@@ -18,7 +18,7 @@ from loggingnight import LoggingNight
 
 sentry_debug: bool = False
 sentry_traces_sample_rate: float = 1.0
-sentry_profiles_sample_rate: float = 0.6
+sentry_profiles_sample_rate: float = 0.2
 gc_hours: int = 6
 dev_mode: bool = False
 
