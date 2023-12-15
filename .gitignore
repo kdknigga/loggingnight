@@ -7,3 +7,8 @@ Leap_Second.dat
 de421.bsp
 deltat.data
 deltat.preds
+
+# Elastic Beanstalk Files
+.elasticbeanstalk/*
+!.elasticbeanstalk/*.cfg.yml
+!.elasticbeanstalk/*.global.yml
