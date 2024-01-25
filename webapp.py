@@ -16,8 +16,8 @@ from flask import Flask, Response, render_template, request
 from loggingnight import LoggingNight
 
 sentry_debug: bool = False
-sentry_traces_sample_rate: float = 1.0
-sentry_profiles_sample_rate: float = 0.2
+sentry_traces_sample_rate: float = 0.1
+sentry_profiles_sample_rate: float = 0.03
 gc_hours: int = 6
 dev_mode: bool = False
 
@@ -26,9 +26,11 @@ match app_env:
     case "production":
         pass
     case "development":
-        sentry_profiles_sample_rate = 1.0
+        sentry_traces_sample_rate = 0.5
+        sentry_profiles_sample_rate = 0.0
         dev_mode = True
     case "debug":
+        sentry_traces_sample_rate = 1.0
         sentry_profiles_sample_rate = 1.0
         sentry_debug = True
         dev_mode = True
@@ -36,6 +38,7 @@ match app_env:
     case _:
         # Default to "local"
         app_env = "local"
+        sentry_traces_sample_rate = 1.0
         sentry_profiles_sample_rate = 1.0
         dev_mode = True
         gc_hours = 1
