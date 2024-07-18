@@ -5,6 +5,7 @@ import json
 import os
 import threading
 import time
+from typing import Any
 
 import flask
 import markupsafe
@@ -16,8 +17,8 @@ from flask import Flask, Response, render_template, request
 from loggingnight import LoggingNight
 
 sentry_debug: bool = False
-sentry_traces_sample_rate: float = 0.001
-sentry_profiles_sample_rate: float = 0.001
+sentry_traces_sample_rate: float = 0.01
+sentry_profiles_sample_rate: float = 0.01
 gc_hours: int = 6
 dev_mode: bool = False
 
@@ -43,12 +44,22 @@ match app_env:
         dev_mode = True
         gc_hours = 1
 
+
+def filter_transactions(event: dict, hint) -> dict[Any, Any] | None:
+    for header in event.get("request", {}).get("headers", {}):
+        if header[0].lower() == "user-agent":
+            if "HealthChecker" in header[1] or "Nmap" in header[1]:
+                return None
+    return event
+
+
 sentry_dsn: str | None = os.environ.get("SENTRY_DSN", None)
 if sentry_dsn is not None:
     sentry_sdk.init(
         dsn=sentry_dsn,
         traces_sample_rate=sentry_traces_sample_rate,
         profiles_sample_rate=sentry_profiles_sample_rate,
+        before_send_transaction=filter_transactions,  # type: ignore
         enable_tracing=True,
         debug=sentry_debug,
         environment=app_env,
