@@ -16,8 +16,8 @@ from flask import Flask, Response, render_template, request
 from loggingnight import LoggingNight
 
 sentry_debug: bool = False
-sentry_traces_sample_rate: float = 0.1
-sentry_profiles_sample_rate: float = 0.03
+sentry_traces_sample_rate: float = 0.001
+sentry_profiles_sample_rate: float = 0.001
 gc_hours: int = 6
 dev_mode: bool = False
 
