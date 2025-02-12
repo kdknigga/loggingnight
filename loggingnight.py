@@ -301,7 +301,7 @@ class LoggingNight:
             verify_ssl=True,
         )
 
-        if not self.airport["query_stats"]["status_code"] in {200, 304}:
+        if self.airport["query_stats"]["status_code"] not in {200, 304}:
             raise self.LocationException(
                 f"Received the following error looking up the airport: {self.airport['query_stats']['status_code']} {self.airport['query_stats']['status_text']}"  # noqa
             )
