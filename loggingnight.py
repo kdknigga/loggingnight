@@ -255,6 +255,7 @@ class LoggingNight:
     @staticmethod
     def garbage_collect_cache():
         if LoggingNight.enable_cache():
+            # BaseCache.delete(expired=True)
             requests_cache.remove_expired_responses()
             log.info("running cache garbage collection")
         else:
